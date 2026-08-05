@@ -9,6 +9,8 @@ erDiagram
 
     USERS {
         uuid id PK
+        text email
+        timestamptz created_at
     }
     API_KEYS {
         uuid id PK
@@ -32,6 +34,8 @@ erDiagram
     POSTS {
         uuid id PK
         uuid user_id FK
+        text body
+        timestamptz created_at
     }
     PLATFORM_POSTS {
         uuid id PK

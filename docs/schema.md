@@ -14,6 +14,8 @@ erDiagram
 
     USERS {
         uuid id PK
+        text email
+        timestamptz created_at
     }
     API_KEYS {
         uuid id PK
@@ -37,6 +39,8 @@ erDiagram
     POSTS {
         uuid id PK
         uuid user_id FK
+        text body
+        timestamptz created_at
     }
     PLATFORM_POSTS {
         uuid id PK
@@ -61,7 +65,7 @@ erDiagram
 
 ## Notes
 
-**`users` and `posts` are stubs.** They already exist in the host scheduling system. Shown with `id` only so the FKs in the diagram connect to something real. Out of scope for this design.
+**`users` and `posts` already exist in the host scheduling system.** Their fields are shown for context only — out of scope for this design. The comment system references them by `id` and doesn't touch their other columns.
 
 **`platform_posts.last_polled_at` and `sync_cursor`** are the two columns this feature adds to an existing table. `sync_cursor` is the opaque pagination token TikTok hands back on each poll — we store it and echo it on the next call. Both nullable: Instagram platform posts (webhook-driven) never fill them.
 
