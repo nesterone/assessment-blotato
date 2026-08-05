@@ -1,0 +1,54 @@
+erDiagram
+    USERS ||--o{ API_KEYS : "has"
+    USERS ||--o{ CONNECTED_ACCOUNTS : "has"
+    USERS ||--o{ POSTS : "authors"
+    USERS |o--o{ COMMENTS : "authors (replies)"
+    POSTS ||--o{ PLATFORM_POSTS : "published as"
+    CONNECTED_ACCOUNTS ||--o{ PLATFORM_POSTS : "through"
+    PLATFORM_POSTS ||--o{ COMMENTS : "receives"
+
+    USERS {
+        uuid id PK
+    }
+    API_KEYS {
+        uuid id PK
+        uuid user_id FK
+        text key_hash UK
+        text key_prefix
+        timestamptz last_used_at
+        timestamptz revoked_at
+        timestamptz created_at
+    }
+    CONNECTED_ACCOUNTS {
+        uuid id PK
+        uuid user_id FK
+        text platform
+        text platform_account_id
+        text access_token
+        text refresh_token
+        timestamptz token_expires_at
+        timestamptz created_at
+    }
+    POSTS {
+        uuid id PK
+        uuid user_id FK
+    }
+    PLATFORM_POSTS {
+        uuid id PK
+        uuid post_id FK
+        uuid connected_account_id FK
+        text platform_post_id
+        timestamptz last_polled_at
+        text sync_cursor
+    }
+    COMMENTS {
+        uuid id PK
+        uuid platform_post_id FK
+        uuid parent_comment_id FK
+        text platform_comment_id
+        uuid author_user_id FK
+        text author_platform_handle
+        text body
+        timestamptz created_at
+        timestamptz synced_at
+    }
