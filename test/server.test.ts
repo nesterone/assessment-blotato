@@ -14,8 +14,14 @@ describe('server', () => {
     await app.close();
   });
 
-  it('returns 404 for unknown routes', async () => {
+  it('returns 404 with error envelope for unknown routes', async () => {
     const res = await app.inject({ method: 'GET', url: '/' });
     expect(res.statusCode).toBe(404);
+    expect(res.json()).toEqual({
+      error: {
+        code: 'not_found',
+        message: expect.any(String),
+      },
+    });
   });
 });
