@@ -43,6 +43,7 @@ Top-level and replies are fetched separately:
 
 - `GET /posts/:id/comments` — returns only top-level **Comments** (those with no parent), paginated.
 - `GET /comments/:id/replies` — returns replies to a specific **Comment**, paginated.
+- `POST /comments/:id/replies` — user writes a reply to a **Comment**. Returns `202` with the new row's `id`; a background sender worker forwards it to the platform.
 
 Storage stays flat: every **Comment** row has a nullable `parent_comment_id`. Two levels is the practical ceiling on both platforms, but the schema doesn't hard-code that — nesting deeper would work if a future platform allowed it.
 
