@@ -35,7 +35,7 @@ Trade-off accepted: our copy can go stale (author edits, deletions on the platfo
 ### Sync cadence
 
 - **TikTok** — poll every 5 minutes, flat (all Platform Posts with sync enabled). No hot/cold tiering; can be added later if quota hurts.
-- **Instagram** — webhook-driven (near real-time). No background polling fallback; a manual `POST /posts/:id/comments/refresh` endpoint covers dropped-webhook recovery on user demand. Also serves TikTok users wanting an on-demand refresh between 5-min polls. Adding a slow safety-net poll is a documented next step if reliability data shows it's needed.
+- **Instagram** — webhook-driven (near real-time), with an hourly reconcile poll as a safety net for dropped webhooks. Reconcile is infra, not user-facing — no manual refresh endpoint.
 
 ### Threading in the API
 
