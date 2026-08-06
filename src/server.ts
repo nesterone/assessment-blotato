@@ -6,6 +6,7 @@ import type { Ajv } from 'ajv';
 import errors from './plugins/errors.js';
 import auth from './plugins/auth.js';
 import posts from './routes/posts.js';
+import comments from './routes/comments.js';
 
 const addFormats = (
   addFormatsImport as unknown as { default?: (ajv: Ajv) => Ajv }
@@ -23,6 +24,7 @@ export async function buildApp() {
   await app.register(errors);
   await app.register(auth);
   await app.register(posts);
+  await app.register(comments);
 
   return app;
 }
