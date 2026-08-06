@@ -1,6 +1,6 @@
-# Blotato Comments API
+# Chatterbox
 
-Stub-phase Fastify + TypeBox scaffold for the comment system. See [`PRD.md`](./PRD.md), [`CONTEXT.md`](./CONTEXT.md), and [`docs/api.md`](./docs/api.md) for the domain and wire contract.
+Stub-phase Fastify + TypeBox scaffold for a cross-platform comment management system. See [`PRD.md`](./PRD.md), [`CONTEXT.md`](./CONTEXT.md), and [`docs/api.md`](./docs/api.md) for the domain and wire contract.
 
 ## Running locally
 

@@ -28,7 +28,7 @@ export async function buildApp() {
   await app.register(swagger, {
     openapi: {
       info: {
-        title: 'Blotato Comments API',
+        title: 'Chatterbox API',
         description: 'Comment system for social media posts',
         version: '0.0.0',
       },
