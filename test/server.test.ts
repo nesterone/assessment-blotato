@@ -24,4 +24,16 @@ describe('server', () => {
       },
     });
   });
+
+  it('exposes OpenAPI document at /docs/json', async () => {
+    const res = await app.inject({ method: 'GET', url: '/docs/json' });
+    expect(res.statusCode).toBe(200);
+    const doc = res.json();
+    expect(doc.paths['/posts']).toBeDefined();
+    expect(doc.paths['/posts/{id}']).toBeDefined();
+    expect(doc.paths['/posts/{id}/comments']).toBeDefined();
+    expect(doc.paths['/comments/{id}/replies']).toBeDefined();
+    expect(doc.paths['/comments/{id}/replies'].get).toBeDefined();
+    expect(doc.paths['/comments/{id}/replies'].post).toBeDefined();
+  });
 });

@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import sensible from '@fastify/sensible';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import addFormatsImport from 'ajv-formats';
 import type { Ajv } from 'ajv';
@@ -22,6 +24,27 @@ export async function buildApp() {
 
   await app.register(sensible);
   await app.register(errors);
+
+  await app.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Blotato Comments API',
+        description: 'Comment system for social media posts',
+        version: '0.0.0',
+      },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+          },
+        },
+      },
+      security: [{ bearerAuth: [] }],
+    },
+  });
+  await app.register(swaggerUi, { routePrefix: '/docs' });
+
   await app.register(auth);
   await app.register(posts);
   await app.register(comments);
