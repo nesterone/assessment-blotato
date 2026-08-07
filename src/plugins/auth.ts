@@ -1,11 +1,17 @@
+import { createHash } from 'node:crypto';
 import fp from 'fastify-plugin';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { and, eq, isNull } from 'drizzle-orm';
+import { db } from '../db/client.js';
+import { apiKeys } from '../db/schema.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
     userId: string;
   }
 }
+
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
 export default fp(async (app) => {
   app.decorateRequest('userId', '');
@@ -21,7 +27,17 @@ export default fp(async (app) => {
       if (!key) {
         throw app.httpErrors.unauthorized('Missing API key');
       }
-      req.userId = 'stub-user';
+
+      const [row] = await db
+        .select({ userId: apiKeys.userId })
+        .from(apiKeys)
+        .where(and(eq(apiKeys.keyHash, sha256(key)), isNull(apiKeys.revokedAt)))
+        .limit(1);
+
+      if (!row) {
+        throw app.httpErrors.unauthorized('Invalid API key');
+      }
+      req.userId = row.userId;
     },
   );
 });
