@@ -4,11 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose down",
+    "db:push": "node --env-file=.env node_modules/drizzle-kit/bin.cjs push",
+    "db:seed": "tsx --env-file=.env src/db/seed.ts",
+    "db:reset": "npm run db:push && npm run db:seed",
+    "db:test:push": "node --env-file=.env.test node_modules/drizzle-kit/bin.cjs push",
+    "test": "npm run db:test:push && node --env-file=.env.test node_modules/.bin/vitest run",
+    "test:watch": "node --env-file=.env.test node_modules/.bin/vitest"
   },
   "dependencies": {
     "@fastify/sensible": "^6.0.4",
@@ -17,11 +24,15 @@
     "@fastify/type-provider-typebox": "^6.1.0",
     "@sinclair/typebox": "^0.34.52",
     "ajv-formats": "^3.0.1",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.11.2",
-    "fastify-plugin": "^6.0.0"
+    "fastify-plugin": "^6.0.0",
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
+    "@types/pg": "^8.20.4",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.9",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
