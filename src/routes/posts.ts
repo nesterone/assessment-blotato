@@ -5,6 +5,8 @@ import { CommentPage } from '../schemas/comment.js';
 import * as handlers from '../handlers/posts.js';
 
 const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
+  const notFound = (msg: string) => app.httpErrors.notFound(msg);
+
   app.get(
     '/posts',
     {
@@ -17,7 +19,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.list(req.userId),
+    async (req) => handlers.list(req.userId, req.query),
   );
 
   app.get(
@@ -33,7 +35,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.get(req.userId, req.params.id),
+    async (req) => handlers.get(req.userId, req.params.id, notFound),
   );
 
   app.get(
@@ -50,7 +52,8 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.listComments(req.userId, req.params.id),
+    async (req) =>
+      handlers.listComments(req.userId, req.params.id, req.query, notFound),
   );
 };
 

@@ -5,6 +5,8 @@ import { CreateReplyBody, CreateReplyResponse } from '../schemas/reply.js';
 import * as handlers from '../handlers/comments.js';
 
 const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
+  const notFound = (msg: string) => app.httpErrors.notFound(msg);
+
   app.get(
     '/comments/:id/replies',
     {
@@ -19,7 +21,8 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.listReplies(req.userId, req.params.id),
+    async (req) =>
+      handlers.listReplies(req.userId, req.params.id, req.query, notFound),
   );
 
   app.post(
@@ -38,7 +41,12 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
       },
     },
     async (req, reply) => {
-      const result = await handlers.createReply(req.userId, req.params.id, req.body);
+      const result = await handlers.createReply(
+        req.userId,
+        req.params.id,
+        req.body,
+        notFound,
+      );
       reply.code(202);
       return result;
     },
