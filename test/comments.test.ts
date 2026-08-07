@@ -1,9 +1,15 @@
-import { describe, it, expect, afterAll, beforeAll } from 'vitest';
+import { describe, it, expect, afterAll, beforeAll, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/server.js';
+import { pool } from '../src/db/client.js';
+import { fixtures } from '../src/db/fixtures.js';
+import { resetDb } from './helpers/db.js';
 
-const VALID_UUID = '11111111-1111-4111-8111-111111111111';
-const AUTH = { authorization: 'Bearer test-key' };
+const API_KEY = process.env.TEST_API_KEY!;
+const AUTH = { authorization: `Bearer ${API_KEY}` };
+const OTHER_USERS_COMMENT = fixtures.comments.otherUsersComment;
+const NESTED_PARENT = fixtures.comments.aIg1;
+const UNKNOWN_UUID = '99999999-9999-4999-8999-999999999999';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 describe('comments routes', () => {
@@ -14,6 +20,10 @@ describe('comments routes', () => {
     await app.ready();
   });
 
+  beforeEach(async () => {
+    await resetDb();
+  });
+
   afterAll(async () => {
     await app.close();
   });
@@ -22,7 +32,16 @@ describe('comments routes', () => {
     it('401 without auth', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${NESTED_PARENT}/replies`,
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('401 for revoked api key', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/comments/${NESTED_PARENT}/replies`,
+        headers: { authorization: `Bearer ${API_KEY}_revoked` },
       });
       expect(res.statusCode).toBe(401);
     });
@@ -37,14 +56,51 @@ describe('comments routes', () => {
       expect(res.json().error.code).toBe('validation_error');
     });
 
-    it('200 with page envelope', async () => {
+    it('404 for other user comment', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${OTHER_USERS_COMMENT}/replies`,
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.json().error.code).toBe('not_found');
+    });
+
+    it('404 for unknown comment', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/comments/${UNKNOWN_UUID}/replies`,
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('returns replies (our sent reply + third-party nested reply)', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: `/comments/${NESTED_PARENT}/replies`,
         headers: AUTH,
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ data: [], next_cursor: null });
+      const body = res.json();
+      expect(body.next_cursor).toBeNull();
+      expect(body.data).toHaveLength(2);
+      const ids = body.data.map((c: { id: string }) => c.id);
+      expect(ids).toContain(fixtures.comments.ourReplySent);
+      expect(ids).toContain(fixtures.comments.nestedThirdParty);
+
+      const ours = body.data.find(
+        (c: { id: string }) => c.id === fixtures.comments.ourReplySent,
+      );
+      expect(ours.author.is_me).toBe(true);
+      expect(ours.send_status).toBe('sent');
+      expect(ours.send_error).toBeUndefined();
+
+      const third = body.data.find(
+        (c: { id: string }) => c.id === fixtures.comments.nestedThirdParty,
+      );
+      expect(third.author.is_me).toBe(false);
+      expect(third.send_status).toBeUndefined();
     });
   });
 
@@ -52,7 +108,7 @@ describe('comments routes', () => {
     it('401 without auth', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${NESTED_PARENT}/replies`,
         payload: { body: 'hi' },
       });
       expect(res.statusCode).toBe(401);
@@ -72,7 +128,7 @@ describe('comments routes', () => {
     it('400 with body missing', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${NESTED_PARENT}/replies`,
         headers: AUTH,
         payload: {},
       });
@@ -89,7 +145,7 @@ describe('comments routes', () => {
     it('400 when body is empty string', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${NESTED_PARENT}/replies`,
         headers: AUTH,
         payload: { body: '' },
       });
@@ -103,16 +159,38 @@ describe('comments routes', () => {
       });
     });
 
-    it('202 with new reply id on happy path', async () => {
+    it('404 for other user comment', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: `/comments/${VALID_UUID}/replies`,
+        url: `/comments/${OTHER_USERS_COMMENT}/replies`,
+        headers: AUTH,
+        payload: { body: 'stay out' },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('202 inserts pending row on happy path', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/comments/${NESTED_PARENT}/replies`,
         headers: AUTH,
         payload: { body: 'thanks!' },
       });
       expect(res.statusCode).toBe(202);
       const body = res.json();
       expect(body.id).toMatch(UUID_RE);
+
+      const { rows } = await pool.query(
+        `SELECT id, send_status, platform_comment_id, parent_comment_id, body, author_user_id
+         FROM comments WHERE id = $1`,
+        [body.id],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].send_status).toBe('pending');
+      expect(rows[0].platform_comment_id).toBeNull();
+      expect(rows[0].parent_comment_id).toBe(NESTED_PARENT);
+      expect(rows[0].body).toBe('thanks!');
+      expect(rows[0].author_user_id).toBe(fixtures.users.primary);
     });
   });
 });
