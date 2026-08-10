@@ -61,6 +61,7 @@ export async function seed() {
       userId: fixtures.users.primary,
       platform: 'instagram',
       platformAccountId: 'ig_acct_primary',
+      handle: 'primary_handle',
       accessToken: 'ig_token_primary',
     },
     {
@@ -68,6 +69,7 @@ export async function seed() {
       userId: fixtures.users.primary,
       platform: 'tiktok',
       platformAccountId: 'tt_acct_primary',
+      handle: 'primary_handle',
       accessToken: 'tt_token_primary',
     },
     {
@@ -75,6 +77,7 @@ export async function seed() {
       userId: fixtures.users.other,
       platform: 'instagram',
       platformAccountId: 'ig_acct_other',
+      handle: 'other_handle',
       accessToken: 'ig_token_other',
     },
   ]);

@@ -93,6 +93,7 @@ describe('comments routes', () => {
         (c: { id: string }) => c.id === fixtures.comments.ourReplySent,
       );
       expect(ours.author.is_me).toBe(true);
+      expect(ours.author.handle).toBe('primary_handle');
       expect(ours.send_status).toBe('sent');
       expect(ours.send_error).toBeUndefined();
 
@@ -181,7 +182,8 @@ describe('comments routes', () => {
       expect(body.id).toMatch(UUID_RE);
 
       const { rows } = await pool.query(
-        `SELECT id, send_status, platform_comment_id, parent_comment_id, body, author_user_id
+        `SELECT id, send_status, platform_comment_id, parent_comment_id, body,
+                author_user_id, author_platform_handle
          FROM comments WHERE id = $1`,
         [body.id],
       );
@@ -191,6 +193,9 @@ describe('comments routes', () => {
       expect(rows[0].parent_comment_id).toBe(NESTED_PARENT);
       expect(rows[0].body).toBe('thanks!');
       expect(rows[0].author_user_id).toBe(fixtures.users.primary);
+      // The parent (aIg1) is on the primary user's Instagram account,
+      // so the reply should be authored under that account's handle.
+      expect(rows[0].author_platform_handle).toBe('primary_handle');
     });
   });
 });

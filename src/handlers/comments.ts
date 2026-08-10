@@ -18,7 +18,7 @@ async function loadOwnedComment(userId: string, commentId: string) {
     .select({
       id: comments.id,
       platformPostId: comments.platformPostId,
-      authorPlatformHandle: connectedAccounts.platformAccountId,
+      authorPlatformHandle: connectedAccounts.handle,
     })
     .from(comments)
     .innerJoin(platformPosts, eq(comments.platformPostId, platformPosts.id))

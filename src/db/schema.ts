@@ -56,6 +56,7 @@ export const connectedAccounts = pgTable('connected_accounts', {
     .references(() => users.id, { onDelete: 'cascade' }),
   platform: text('platform').notNull(),
   platformAccountId: text('platform_account_id').notNull(),
+  handle: text('handle').notNull(),
   accessToken: text('access_token').notNull(),
   refreshToken: text('refresh_token'),
   tokenExpiresAt: timestamp('token_expires_at', { withTimezone: true }),
