@@ -10,6 +10,7 @@ import {
   posts,
 } from '../db/schema.js';
 import { decodeCursor, paginate } from '../db/pagination.js';
+import { NotFoundError } from '../errors.js';
 import { toPost, toComment } from './mappers.js';
 
 const DEFAULT_LIMIT = 50;
@@ -49,18 +50,14 @@ export async function list(
   return { data: page.rows.map(toPost), next_cursor: page.nextCursor };
 }
 
-export async function get(
-  userId: string,
-  id: string,
-  notFound: (msg: string) => Error,
-): Promise<Post> {
+export async function get(userId: string, id: string): Promise<Post> {
   const [row] = await db
     .select({ id: posts.id, body: posts.body, createdAt: posts.createdAt })
     .from(posts)
     .where(and(eq(posts.id, id), eq(posts.userId, userId)))
     .limit(1);
 
-  if (!row) throw notFound('Post not found');
+  if (!row) throw new NotFoundError('Post not found');
   return toPost(row);
 }
 
@@ -68,7 +65,6 @@ export async function listComments(
   userId: string,
   postId: string,
   query: PaginationQuery,
-  notFound: (msg: string) => Error,
 ): Promise<CommentPage> {
   const [owner] = await db
     .select({ id: posts.id })
@@ -76,7 +72,7 @@ export async function listComments(
     .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
     .limit(1);
 
-  if (!owner) throw notFound('Post not found');
+  if (!owner) throw new NotFoundError('Post not found');
 
   const limit = query.limit ?? DEFAULT_LIMIT;
   const cursor = decodeCursor(query.cursor);

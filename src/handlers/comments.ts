@@ -10,6 +10,7 @@ import {
 } from '../db/schema.js';
 import { decodeCursor, paginate } from '../db/pagination.js';
 import { getParentComment } from '../db/queries/comments.js';
+import { NotFoundError } from '../errors.js';
 import { toComment } from './mappers.js';
 
 const DEFAULT_LIMIT = 50;
@@ -18,10 +19,9 @@ export async function listReplies(
   userId: string,
   commentId: string,
   query: PaginationQuery,
-  notFound: (msg: string) => Error,
 ): Promise<CommentPage> {
   const parent = await getParentComment(userId, commentId);
-  if (!parent) throw notFound('Comment not found');
+  if (!parent) throw new NotFoundError('Comment not found');
 
   const limit = query.limit ?? DEFAULT_LIMIT;
   const cursor = decodeCursor(query.cursor);
@@ -69,10 +69,9 @@ export async function createReply(
   userId: string,
   commentId: string,
   body: CreateReplyBody,
-  notFound: (msg: string) => Error,
 ): Promise<CreateReplyResponse> {
   const parent = await getParentComment(userId, commentId);
-  if (!parent) throw notFound('Comment not found');
+  if (!parent) throw new NotFoundError('Comment not found');
 
   const [inserted] = await db
     .insert(comments)
