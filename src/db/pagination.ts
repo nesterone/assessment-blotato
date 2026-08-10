@@ -1,12 +1,6 @@
-export type Cursor = { createdAt: string; id: string };
+import { InvalidCursorError } from '../errors.js';
 
-export class InvalidCursorError extends Error {
-  readonly statusCode = 400;
-  constructor(message = 'Invalid cursor') {
-    super(message);
-    this.name = 'InvalidCursorError';
-  }
-}
+export type Cursor = { createdAt: string; id: string };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
