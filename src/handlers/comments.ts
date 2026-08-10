@@ -11,20 +11,23 @@ import {
 import { decodeCursor, paginate } from '../db/pagination.js';
 import { getParentComment } from '../db/queries/comments.js';
 import { NotFoundError } from '../errors.js';
+import type { HandlerContext } from './types.js';
 import { toComment } from './mappers.js';
 
 const DEFAULT_LIMIT = 50;
 
+type ListRepliesInput = { parentCommentId: string } & PaginationQuery;
+type CreateReplyInput = { parentCommentId: string } & CreateReplyBody;
+
 export async function listReplies(
-  userId: string,
-  commentId: string,
-  query: PaginationQuery,
+  input: ListRepliesInput,
+  ctx: HandlerContext,
 ): Promise<CommentPage> {
-  const parent = await getParentComment(userId, commentId);
+  const parent = await getParentComment(ctx.userId, input.parentCommentId);
   if (!parent) throw new NotFoundError('Comment not found');
 
-  const limit = query.limit ?? DEFAULT_LIMIT;
-  const cursor = decodeCursor(query.cursor);
+  const limit = input.limit ?? DEFAULT_LIMIT;
+  const cursor = decodeCursor(input.cursor);
 
   const rows = await db
     .select({
@@ -46,7 +49,7 @@ export async function listReplies(
     )
     .where(
       and(
-        eq(comments.parentCommentId, commentId),
+        eq(comments.parentCommentId, input.parentCommentId),
         cursor
           ? or(
               lt(comments.createdAt, new Date(cursor.createdAt)),
@@ -66,22 +69,21 @@ export async function listReplies(
 }
 
 export async function createReply(
-  userId: string,
-  commentId: string,
-  body: CreateReplyBody,
+  input: CreateReplyInput,
+  ctx: HandlerContext,
 ): Promise<CreateReplyResponse> {
-  const parent = await getParentComment(userId, commentId);
+  const parent = await getParentComment(ctx.userId, input.parentCommentId);
   if (!parent) throw new NotFoundError('Comment not found');
 
   const [inserted] = await db
     .insert(comments)
     .values({
       platformPostId: parent.platformPostId,
-      parentCommentId: commentId,
+      parentCommentId: input.parentCommentId,
       platformCommentId: null,
-      authorUserId: userId,
+      authorUserId: ctx.userId,
       authorPlatformHandle: parent.authorPlatformHandle,
-      body: body.body,
+      body: input.body,
       sendStatus: 'pending',
     })
     .returning({ id: comments.id });

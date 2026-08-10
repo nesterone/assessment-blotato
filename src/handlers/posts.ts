@@ -11,16 +11,20 @@ import {
 } from '../db/schema.js';
 import { decodeCursor, paginate } from '../db/pagination.js';
 import { NotFoundError } from '../errors.js';
+import type { HandlerContext } from './types.js';
 import { toPost, toComment } from './mappers.js';
 
 const DEFAULT_LIMIT = 50;
 
+type GetPostInput = { postId: string };
+type ListCommentsInput = { postId: string } & PaginationQuery;
+
 export async function list(
-  userId: string,
-  query: PaginationQuery = {},
+  input: PaginationQuery,
+  ctx: HandlerContext,
 ): Promise<PostPage> {
-  const limit = query.limit ?? DEFAULT_LIMIT;
-  const cursor = decodeCursor(query.cursor);
+  const limit = input.limit ?? DEFAULT_LIMIT;
+  const cursor = decodeCursor(input.cursor);
 
   const rows = await db
     .select({
@@ -31,7 +35,7 @@ export async function list(
     .from(posts)
     .where(
       and(
-        eq(posts.userId, userId),
+        eq(posts.userId, ctx.userId),
         cursor
           ? or(
               lt(posts.createdAt, new Date(cursor.createdAt)),
@@ -50,11 +54,14 @@ export async function list(
   return { data: page.rows.map(toPost), next_cursor: page.nextCursor };
 }
 
-export async function get(userId: string, id: string): Promise<Post> {
+export async function get(
+  input: GetPostInput,
+  ctx: HandlerContext,
+): Promise<Post> {
   const [row] = await db
     .select({ id: posts.id, body: posts.body, createdAt: posts.createdAt })
     .from(posts)
-    .where(and(eq(posts.id, id), eq(posts.userId, userId)))
+    .where(and(eq(posts.id, input.postId), eq(posts.userId, ctx.userId)))
     .limit(1);
 
   if (!row) throw new NotFoundError('Post not found');
@@ -62,20 +69,19 @@ export async function get(userId: string, id: string): Promise<Post> {
 }
 
 export async function listComments(
-  userId: string,
-  postId: string,
-  query: PaginationQuery,
+  input: ListCommentsInput,
+  ctx: HandlerContext,
 ): Promise<CommentPage> {
   const [owner] = await db
     .select({ id: posts.id })
     .from(posts)
-    .where(and(eq(posts.id, postId), eq(posts.userId, userId)))
+    .where(and(eq(posts.id, input.postId), eq(posts.userId, ctx.userId)))
     .limit(1);
 
   if (!owner) throw new NotFoundError('Post not found');
 
-  const limit = query.limit ?? DEFAULT_LIMIT;
-  const cursor = decodeCursor(query.cursor);
+  const limit = input.limit ?? DEFAULT_LIMIT;
+  const cursor = decodeCursor(input.cursor);
 
   const rows = await db
     .select({
@@ -97,7 +103,7 @@ export async function listComments(
     )
     .where(
       and(
-        eq(platformPosts.postId, postId),
+        eq(platformPosts.postId, input.postId),
         isNull(comments.parentCommentId),
         cursor
           ? or(

@@ -17,7 +17,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.list(req.userId, req.query),
+    async (req) => handlers.list(req.query, { userId: req.userId }),
   );
 
   app.get(
@@ -33,7 +33,8 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.get(req.userId, req.params.id),
+    async (req) =>
+      handlers.get({ postId: req.params.id }, { userId: req.userId }),
   );
 
   app.get(
@@ -50,7 +51,11 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.listComments(req.userId, req.params.id, req.query),
+    async (req) =>
+      handlers.listComments(
+        { postId: req.params.id, ...req.query },
+        { userId: req.userId },
+      ),
   );
 };
 

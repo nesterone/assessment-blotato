@@ -19,7 +19,11 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.listReplies(req.userId, req.params.id, req.query),
+    async (req) =>
+      handlers.listReplies(
+        { parentCommentId: req.params.id, ...req.query },
+        { userId: req.userId },
+      ),
   );
 
   app.post(
@@ -39,9 +43,8 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
     },
     async (req, reply) => {
       const result = await handlers.createReply(
-        req.userId,
-        req.params.id,
-        req.body,
+        { parentCommentId: req.params.id, ...req.body },
+        { userId: req.userId },
       );
       reply.code(202);
       return result;
