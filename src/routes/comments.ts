@@ -2,7 +2,8 @@ import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { PaginationQuery, UuidParam, ErrorResponse } from '../schemas/common.js';
 import { CommentPage } from '../schemas/comment.js';
 import { CreateReplyBody, CreateReplyResponse } from '../schemas/reply.js';
-import * as handlers from '../handlers/comments.js';
+import { listReplies } from '../handlers/comments/list-replies.js';
+import { createReply } from '../handlers/comments/create-reply.js';
 
 const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.get(
@@ -20,7 +21,7 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
       },
     },
     async (req) =>
-      handlers.listReplies(
+      listReplies(
         { parentCommentId: req.params.id, ...req.query },
         { userId: req.userId },
       ),
@@ -42,7 +43,7 @@ const commentsRoutes: FastifyPluginAsyncTypebox = async (app) => {
       },
     },
     async (req, reply) => {
-      const result = await handlers.createReply(
+      const result = await createReply(
         { parentCommentId: req.params.id, ...req.body },
         { userId: req.userId },
       );

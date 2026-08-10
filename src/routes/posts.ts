@@ -2,7 +2,9 @@ import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
 import { PaginationQuery, UuidParam, ErrorResponse } from '../schemas/common.js';
 import { Post, PostPage } from '../schemas/post.js';
 import { CommentPage } from '../schemas/comment.js';
-import * as handlers from '../handlers/posts.js';
+import { listPosts } from '../handlers/posts/list-posts.js';
+import { getPost } from '../handlers/posts/get-post.js';
+import { listPostComments } from '../handlers/posts/list-post-comments.js';
 
 const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
   app.get(
@@ -17,7 +19,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) => handlers.list(req.query, { userId: req.userId }),
+    async (req) => listPosts(req.query, { userId: req.userId }),
   );
 
   app.get(
@@ -33,8 +35,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
         },
       },
     },
-    async (req) =>
-      handlers.get({ postId: req.params.id }, { userId: req.userId }),
+    async (req) => getPost({ postId: req.params.id }, { userId: req.userId }),
   );
 
   app.get(
@@ -52,7 +53,7 @@ const postsRoutes: FastifyPluginAsyncTypebox = async (app) => {
       },
     },
     async (req) =>
-      handlers.listComments(
+      listPostComments(
         { postId: req.params.id, ...req.query },
         { userId: req.userId },
       ),
