@@ -1,20 +1,19 @@
-import { and, desc, eq, isNull, lt, or } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { PaginationQuery } from '../schemas/common.js';
 import type { Post, PostPage } from '../schemas/post.js';
 import type { CommentPage } from '../schemas/comment.js';
 import { db } from '../db/client.js';
+import { comments, platformPosts, posts } from '../db/schema.js';
 import {
-  comments,
-  connectedAccounts,
-  platformPosts,
-  posts,
-} from '../db/schema.js';
-import { decodeCursor, paginate } from '../db/pagination.js';
+  DEFAULT_LIMIT,
+  afterCursor,
+  decodeCursor,
+  paginate,
+} from '../db/pagination.js';
+import { commentsWithPlatform } from '../db/queries/comments.js';
 import { NotFoundError } from '../errors.js';
 import type { HandlerContext } from './types.js';
 import { toPost, toComment } from './mappers.js';
-
-const DEFAULT_LIMIT = 50;
 
 type GetPostInput = { postId: string };
 type ListCommentsInput = { postId: string } & PaginationQuery;
@@ -36,15 +35,7 @@ export async function list(
     .where(
       and(
         eq(posts.userId, ctx.userId),
-        cursor
-          ? or(
-              lt(posts.createdAt, new Date(cursor.createdAt)),
-              and(
-                eq(posts.createdAt, new Date(cursor.createdAt)),
-                lt(posts.id, cursor.id),
-              ),
-            )
-          : undefined,
+        afterCursor(posts.createdAt, posts.id, cursor),
       ),
     )
     .orderBy(desc(posts.createdAt), desc(posts.id))
@@ -83,37 +74,12 @@ export async function listComments(
   const limit = input.limit ?? DEFAULT_LIMIT;
   const cursor = decodeCursor(input.cursor);
 
-  const rows = await db
-    .select({
-      id: comments.id,
-      platformPostId: comments.platformPostId,
-      platform: connectedAccounts.platform,
-      authorUserId: comments.authorUserId,
-      authorPlatformHandle: comments.authorPlatformHandle,
-      body: comments.body,
-      sendStatus: comments.sendStatus,
-      sendError: comments.sendError,
-      createdAt: comments.createdAt,
-    })
-    .from(comments)
-    .innerJoin(platformPosts, eq(comments.platformPostId, platformPosts.id))
-    .innerJoin(
-      connectedAccounts,
-      eq(platformPosts.connectedAccountId, connectedAccounts.id),
-    )
+  const rows = await commentsWithPlatform()
     .where(
       and(
         eq(platformPosts.postId, input.postId),
         isNull(comments.parentCommentId),
-        cursor
-          ? or(
-              lt(comments.createdAt, new Date(cursor.createdAt)),
-              and(
-                eq(comments.createdAt, new Date(cursor.createdAt)),
-                lt(comments.id, cursor.id),
-              ),
-            )
-          : undefined,
+        afterCursor(comments.createdAt, comments.id, cursor),
       ),
     )
     .orderBy(desc(comments.createdAt), desc(comments.id))

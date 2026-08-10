@@ -1,20 +1,22 @@
-import { and, desc, eq, lt, or } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import type { PaginationQuery } from '../schemas/common.js';
 import type { CommentPage } from '../schemas/comment.js';
 import type { CreateReplyBody, CreateReplyResponse } from '../schemas/reply.js';
 import { db } from '../db/client.js';
+import { comments } from '../db/schema.js';
 import {
-  comments,
-  connectedAccounts,
-  platformPosts,
-} from '../db/schema.js';
-import { decodeCursor, paginate } from '../db/pagination.js';
-import { getParentComment } from '../db/queries/comments.js';
+  DEFAULT_LIMIT,
+  afterCursor,
+  decodeCursor,
+  paginate,
+} from '../db/pagination.js';
+import {
+  commentsWithPlatform,
+  getParentComment,
+} from '../db/queries/comments.js';
 import { NotFoundError } from '../errors.js';
 import type { HandlerContext } from './types.js';
 import { toComment } from './mappers.js';
-
-const DEFAULT_LIMIT = 50;
 
 type ListRepliesInput = { parentCommentId: string } & PaginationQuery;
 type CreateReplyInput = { parentCommentId: string } & CreateReplyBody;
@@ -29,36 +31,11 @@ export async function listReplies(
   const limit = input.limit ?? DEFAULT_LIMIT;
   const cursor = decodeCursor(input.cursor);
 
-  const rows = await db
-    .select({
-      id: comments.id,
-      platformPostId: comments.platformPostId,
-      platform: connectedAccounts.platform,
-      authorUserId: comments.authorUserId,
-      authorPlatformHandle: comments.authorPlatformHandle,
-      body: comments.body,
-      sendStatus: comments.sendStatus,
-      sendError: comments.sendError,
-      createdAt: comments.createdAt,
-    })
-    .from(comments)
-    .innerJoin(platformPosts, eq(comments.platformPostId, platformPosts.id))
-    .innerJoin(
-      connectedAccounts,
-      eq(platformPosts.connectedAccountId, connectedAccounts.id),
-    )
+  const rows = await commentsWithPlatform()
     .where(
       and(
         eq(comments.parentCommentId, input.parentCommentId),
-        cursor
-          ? or(
-              lt(comments.createdAt, new Date(cursor.createdAt)),
-              and(
-                eq(comments.createdAt, new Date(cursor.createdAt)),
-                lt(comments.id, cursor.id),
-              ),
-            )
-          : undefined,
+        afterCursor(comments.createdAt, comments.id, cursor),
       ),
     )
     .orderBy(desc(comments.createdAt), desc(comments.id))
