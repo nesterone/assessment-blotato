@@ -9,27 +9,10 @@ import {
   platformPosts,
 } from '../db/schema.js';
 import { decodeCursor, paginate } from '../db/pagination.js';
+import { getParentComment } from '../db/queries/comments.js';
 import { toComment } from './mappers.js';
 
 const DEFAULT_LIMIT = 50;
-
-async function loadOwnedComment(userId: string, commentId: string) {
-  const [row] = await db
-    .select({
-      id: comments.id,
-      platformPostId: comments.platformPostId,
-      authorPlatformHandle: connectedAccounts.handle,
-    })
-    .from(comments)
-    .innerJoin(platformPosts, eq(comments.platformPostId, platformPosts.id))
-    .innerJoin(
-      connectedAccounts,
-      eq(platformPosts.connectedAccountId, connectedAccounts.id),
-    )
-    .where(and(eq(comments.id, commentId), eq(connectedAccounts.userId, userId)))
-    .limit(1);
-  return row;
-}
 
 export async function listReplies(
   userId: string,
@@ -37,7 +20,7 @@ export async function listReplies(
   query: PaginationQuery,
   notFound: (msg: string) => Error,
 ): Promise<CommentPage> {
-  const parent = await loadOwnedComment(userId, commentId);
+  const parent = await getParentComment(userId, commentId);
   if (!parent) throw notFound('Comment not found');
 
   const limit = query.limit ?? DEFAULT_LIMIT;
@@ -88,7 +71,7 @@ export async function createReply(
   body: CreateReplyBody,
   notFound: (msg: string) => Error,
 ): Promise<CreateReplyResponse> {
-  const parent = await loadOwnedComment(userId, commentId);
+  const parent = await getParentComment(userId, commentId);
   if (!parent) throw notFound('Comment not found');
 
   const [inserted] = await db
