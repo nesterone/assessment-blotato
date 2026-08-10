@@ -79,6 +79,53 @@ describe('posts routes', () => {
       expect(secondBody.data[0].id).toBe(fixtures.posts.a);
       expect(secondBody.next_cursor).toBeNull();
     });
+
+    it('400 for cursor that is not valid base64url json', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/posts?cursor=not%20a%20cursor%21%21%21',
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('bad_request');
+    });
+
+    it('400 for cursor whose json has the wrong shape', async () => {
+      const bad = Buffer.from(JSON.stringify({ foo: 'bar' })).toString('base64url');
+      const res = await app.inject({
+        method: 'GET',
+        url: `/posts?cursor=${encodeURIComponent(bad)}`,
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('bad_request');
+    });
+
+    it('400 for cursor whose createdAt is not a real date', async () => {
+      const bad = Buffer.from(
+        JSON.stringify({ createdAt: 'garbage', id: fixtures.posts.a }),
+      ).toString('base64url');
+      const res = await app.inject({
+        method: 'GET',
+        url: `/posts?cursor=${encodeURIComponent(bad)}`,
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('bad_request');
+    });
+
+    it('400 for cursor whose id is not a uuid', async () => {
+      const bad = Buffer.from(
+        JSON.stringify({ createdAt: new Date().toISOString(), id: 'not-a-uuid' }),
+      ).toString('base64url');
+      const res = await app.inject({
+        method: 'GET',
+        url: `/posts?cursor=${encodeURIComponent(bad)}`,
+        headers: AUTH,
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('bad_request');
+    });
   });
 
   describe('GET /posts/:id', () => {
