@@ -62,12 +62,3 @@ API-key per user. Caller sends `Authorization: Bearer <api_key>`; middleware has
 Key storage: `key_hash` (sha256, not bcrypt — hit on every request; 256-bit random keys don't need stretching), `key_prefix` (first 8 chars, for UI identification), `last_used_at`, `revoked_at`. Revocation is instant (row update; no cache to invalidate).
 
 Deliberately excluded: scoped/permissioned keys, forced rotation, JWTs. Rate limiting lives at the gateway, keyed on `user_id`.
-
-See [ADR-0003](./adr/0003-api-key-auth.md).
-
-## Open questions
-
-(none blocking design; ready for schema + code) Flat list with `parent_comment_id`, server-assembled tree, or top-level + on-demand replies?
-- **Pagination model.** Cursor vs. offset; how we hide per-platform cursor quirks.
-- **Caller auth.** How the REST caller authenticates to us, and how that maps to **Connected Accounts**.
-- **Multi-tenancy.** Workspaces / teams — in scope or ignore for the take-home?

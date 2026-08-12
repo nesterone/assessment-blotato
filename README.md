@@ -52,11 +52,27 @@ curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
 
 ### Run against the fake platforms
 
-To check full cycle 
+To check the full cycle — post a reply, then let the sender worker forward it to the platform:
 
 ```bash
 npm run fakes   # serves /ig and /tiktok on http://127.0.0.1:4000
 ```
+
+The fakes are seeded with two parent comments, so a reply only sends
+successfully when its parent is one of these:
+
+| Comment `:id` (POST target) | Platform / Post | Body |
+| --- | --- | --- |
+| `dddd0000-0000-4000-8000-00000000a101` | Instagram / Post A | "Love this!" |
+| `dddd0000-0000-4000-8000-00000000a202` | TikTok / Post A | "Where can I buy?" |
+
+```bash
+curl -X POST -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
+  -H 'Content-Type: application/json' -d '{"body":"Thanks!"}' \
+  http://localhost:3000/comments/dddd0000-0000-4000-8000-00000000a101/replies
+```
+
+Replying to any other comment is rejected by the fake as an unknown parent.
 
 
 ## Test it
