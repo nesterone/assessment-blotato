@@ -26,7 +26,7 @@ Out of scope: moderation (hide/delete), editing our own **Replies**, likes/react
 
 ### Comments are stored, not proxied
 
-We keep our own copy of **Comments** in our database and serve reads from it. Background sync (webhooks for Instagram, polling for TikTok) keeps our copy fresh.
+We keep our own copy of **Comments** in our database and serve reads from it. Background sync keeps our copy fresh — polling both platforms, with Instagram webhooks as an additive next step ([ADR-0006](./adr/0006-platform-boundary-and-http-fakes.md)).
 
 Rationale: the unified-inbox product experience is not viable via live fan-out to N platform APIs per request — it would be slow, rate-limit-bound, and fail whenever any single platform is degraded. A local store also enables cross-platform queries (e.g. "all comments across all my Platform Posts, newest first").
 
@@ -35,7 +35,7 @@ Trade-off accepted: our copy can go stale (author edits, deletions on the platfo
 ### Sync cadence
 
 - **TikTok** — poll every 5 minutes, flat (all Platform Posts with sync enabled). No hot/cold tiering; can be added later if quota hurts.
-- **Instagram** — webhook-driven (near real-time), with an hourly reconcile poll as a safety net for dropped webhooks. Reconcile is infra, not user-facing — no manual refresh endpoint.
+- **Instagram** — polled hourly. Webhooks (near real-time) are the natural upgrade and would demote this poll to a reconcile safety net for dropped deliveries; scoped out as additive ([ADR-0006](./adr/0006-platform-boundary-and-http-fakes.md)). Reconcile is infra, not user-facing — no manual refresh endpoint.
 
 ### Threading in the API
 
