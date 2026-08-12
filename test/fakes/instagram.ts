@@ -15,6 +15,9 @@ export function instagramFake(store: FakeStore) {
         if (authExpired(req.query.access_token)) return oauthExpired(reply);
         const parentId = req.params.commentId;
         if (parentId.includes('ratelimit')) return rateLimited(reply);
+        if (parentId.includes('flaky') && store.recordAttempt(parentId) === 1) {
+          return rateLimited(reply);
+        }
         const parent = store.get(parentId);
         if (!parent) {
           return reject(reply, 'does not resolve to a valid comment');

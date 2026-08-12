@@ -4,6 +4,8 @@ import { buildApp } from '../src/server.js';
 import { pool } from '../src/db/client.js';
 import { fixtures } from '../src/db/fixtures.js';
 import { resetDb } from './helpers/db.js';
+import { startFakes, type Fakes } from './helpers/fakes.js';
+import { SenderWorker } from '../src/workers/sender.js';
 
 const API_KEY = process.env.TEST_API_KEY!;
 const AUTH = { authorization: `Bearer ${API_KEY}` };
@@ -27,6 +29,75 @@ describe('comments routes', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  describe('reply round-trip through the sender', () => {
+    let fakes: Fakes;
+    const sender = new SenderWorker();
+
+    beforeAll(async () => {
+      fakes = await startFakes();
+    });
+
+    afterAll(async () => {
+      await fakes.close();
+    });
+
+    beforeEach(() => {
+      fakes.store.reset();
+    });
+
+    it('POST reply → drainAll → GET shows send_status "sent"', async () => {
+      fakes.store.seedComment({
+        platformCommentId: 'ig_c_a1',
+        platformPostId: 'ig_post_a',
+        authorHandle: 'u',
+        body: 'parent',
+      });
+
+      const posted = await app.inject({
+        method: 'POST',
+        url: `/comments/${NESTED_PARENT}/replies`,
+        headers: AUTH,
+        payload: { body: 'thanks!' },
+      });
+      const replyId = posted.json().id;
+
+      await sender.drainAll();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/comments/${NESTED_PARENT}/replies`,
+        headers: AUTH,
+      });
+      const reply = res
+        .json()
+        .data.find((c: { id: string }) => c.id === replyId);
+      expect(reply.send_status).toBe('sent');
+    });
+
+    it('POST reply the platform rejects → GET shows "failed" + send_error', async () => {
+      const posted = await app.inject({
+        method: 'POST',
+        url: `/comments/${NESTED_PARENT}/replies`,
+        headers: AUTH,
+        payload: { body: 'nope' },
+      });
+      const replyId = posted.json().id;
+
+      await sender.drainAll();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/comments/${NESTED_PARENT}/replies`,
+        headers: AUTH,
+      });
+      const reply = res
+        .json()
+        .data.find((c: { id: string }) => c.id === replyId);
+      expect(reply.send_status).toBe('failed');
+      expect(reply.send_error).toBeTruthy();
+    });
   });
 
   describe('GET /comments/:id/replies', () => {

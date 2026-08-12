@@ -13,6 +13,9 @@ export function tiktokFake(store: FakeStore) {
       if (authExpired(req)) return authError(reply);
       const parentId = req.body.comment_id;
       if (parentId.includes('ratelimit')) return rateLimited(reply);
+      if (parentId.includes('flaky') && store.recordAttempt(parentId) === 1) {
+        return rateLimited(reply);
+      }
       if (!store.has(parentId)) {
         return rejected(reply, 'comment_id not found');
       }

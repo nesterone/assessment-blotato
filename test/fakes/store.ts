@@ -23,10 +23,19 @@ export type Page = { items: StoredComment[]; nextCursor: string | null };
 export class FakeStore {
   private comments: StoredComment[] = [];
   private seq = 0;
+  private attempts = new Map<string, number>();
 
   reset(): void {
     this.comments = [];
     this.seq = 0;
+    this.attempts.clear();
+  }
+
+  /** Counts hits per key so a fake can fail the first N and then succeed. */
+  recordAttempt(key: string): number {
+    const next = (this.attempts.get(key) ?? 0) + 1;
+    this.attempts.set(key, next);
+    return next;
   }
 
   seedComment(input: {
@@ -70,6 +79,12 @@ export class FakeStore {
 
   has(platformCommentId: string): boolean {
     return this.comments.some((c) => c.platformCommentId === platformCommentId);
+  }
+
+  allReplies(parentPlatformCommentId: string): StoredComment[] {
+    return this.comments.filter(
+      (c) => c.parentPlatformCommentId === parentPlatformCommentId,
+    );
   }
 
   topLevel(platformPostId: string, cursor: string | null): Page {

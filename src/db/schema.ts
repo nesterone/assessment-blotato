@@ -2,6 +2,7 @@ import {
   pgTable,
   uuid,
   text,
+  integer,
   timestamp,
   uniqueIndex,
   index,
@@ -97,6 +98,8 @@ export const comments = pgTable(
     body: text('body').notNull(),
     sendStatus: text('send_status').notNull().default('sent'),
     sendError: text('send_error'),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
