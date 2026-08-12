@@ -1,68 +1,51 @@
 # Chatterbox
 
-Fastify + TypeBox + Drizzle/Postgres implementation of a cross-platform comment management API. See [`PRD.md`](./PRD.md), [`CONTEXT.md`](./CONTEXT.md), [`docs/api.md`](./docs/api.md), and [`docs/schema.md`](./docs/schema.md) for the domain, wire contract, and data model.
+A cross-platform comment system for a social-media scheduling API: read the **Comments** on your published **Posts** and **Reply** to them, across Instagram and TikTok, through one REST API.
 
-## Running locally
+Fastify + TypeBox + Drizzle/Postgres. Node 22, Docker for Postgres 16. Terms in **bold** live in [`CONTEXT.md`](./CONTEXT.md).
 
-Requires Node 22 (pinned in `.nvmrc`) and Docker (for Postgres 16).
+## Run it
 
 ```bash
-nvm use
-npm install
-cp .env.example .env    # override any values you don't like
-
-npm run db:start        # docker compose up -d postgres
-npm run db:reset        # push schema + seed fixtures
-npm run dev             # tsx watch, boots on PORT (default 3000)
+nvm use && npm install
+cp .env.example .env
+npm run db:start && npm run db:reset && npm run dev
 ```
 
-Explorer UI: <http://localhost:3000/docs> · OpenAPI JSON: <http://localhost:3000/docs/json>
-
-### Environment variables
-
-| Var | Purpose |
-| --- | --- |
-| `DATABASE_URL` | Postgres connection string. |
-| `PORT` | HTTP port (default `3000`). |
-| `INSTAGRAM_BASE_URL` / `TIKTOK_BASE_URL` | Platform API roots. No real app for this assessment, so they point at the fakes in `test/fakes`; the real values are in `.env.example` comments. |
-| `TEST_API_KEY` | Plaintext API key seeded into `api_keys`. sha256 of this value is what the DB stores; requests send `Authorization: Bearer <TEST_API_KEY>`. |
-
-`.env` is gitignored (dev writes their own). `.env.example` and `.env.test` are committed templates.
-
-### Auth
-
-Every endpoint requires `Authorization: Bearer <api_key>`. The auth plugin sha256s the bearer token and looks it up in `api_keys` where `revoked_at IS NULL`.
+API on `:3000`, live docs at <http://localhost:3000/docs>. Every request needs `Authorization: Bearer <api_key>`:
 
 ```bash
 curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
   http://localhost:3000/posts
 ```
 
-## Tests
+## Test it
 
-Tests use a separate `chatterbox_test` database (created by `docker/postgres-init/`) and reseed themselves in `beforeEach`. Requires docker up.
+79 tests against **real Postgres and real HTTP** — the fakes are actual servers, so the suite exercises the real platform adapters, not stand-ins that agree with themselves.
 
 ```bash
-npm run db:start        # once
-npm test                # pushes schema to chatterbox_test, then vitest
-npm run test:watch
+npm run db:start && npm test
 ```
 
-## Scripts
+## What was asked, and where it lives
 
-| Script | What it does |
+The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things and four deliverables.
+
+| Requirement | Where |
 | --- | --- |
-| `npm run dev` | Start API in watch mode. |
-| `npm run fakes` | Serve the fake Instagram + TikTok on `:4000` (`FAKES_PORT` to override). |
-| `npm run typecheck` | `tsc --noEmit`. |
-| `npm run format` / `format:check` | Prettier over code; markdown is ignored. |
-| `npm run build` / `start` | Compile to `dist/` / run compiled server. |
-| `npm run db:start` / `db:stop` | Docker compose up/down. |
-| `npm run db:push` | Sync `src/db/schema.ts` to the dev DB. |
-| `npm run db:seed` | Truncate + seed dev DB from `src/db/seed.ts`. |
-| `npm run db:reset` | `db:push && db:seed`. |
-| `npm test` | Push schema to test DB, run vitest once. |
+| Retrieve comments for a post | `GET /posts/:id/comments`, `GET /comments/:id/replies` |
+| Reply to a comment | `POST /comments/:id/replies` |
+| Multiple platforms | [`src/platforms/`](./src/platforms) — one `PlatformClient`, adapters for Instagram + TikTok |
+| REST API | [`src/routes/`](./src/routes), [`src/handlers/`](./src/handlers) |
 
-## Scope
+| Deliverable | Where |
+| --- | --- |
+| Database schema | [`src/db/schema.ts`](./src/db/schema.ts), explained in [`docs/schema.md`](./docs/schema.md) |
+| API design | [`docs/api.md`](./docs/api.md), live at `/docs` |
+| TypeScript | [`src/`](./src) |
+| Design decisions | [`docs/adr/`](./docs/adr) |
 
-Handlers run real Drizzle queries against Postgres; auth is real (sha256 API keys). The sender worker is out of scope: `POST /comments/:id/replies` inserts a `pending` row and returns 202 — nothing forwards to the platform yet.
+## The decisions
+
+The ones with cost to reverse are recorded as ADRs — start at the [index](./docs/adr). Two carry the design: [comments are stored, not proxied](./docs/adr/0001-comments-as-system-of-record.md), and [the platform boundary lives behind the workers](./docs/adr/0006-platform-boundary-and-http-fakes.md). Smaller, reversible choices sit in [`docs/PRD.md`](./docs/PRD.md).
+</content>

@@ -1,6 +1,6 @@
-# PRD — Detailed
+# PRD
 
-Expansion of [`PRD.md`](./PRD.md) with the framing, scope, and design decisions worked out during grilling. Terms in **bold** are defined in [`CONTEXT.md`](./CONTEXT.md).
+Expansion of the [brief](./BRIEF.md) with the framing, scope, and design decisions worked out during grilling. Terms in **bold** are defined in [`CONTEXT.md`](../CONTEXT.md).
 
 ## Product framing
 
@@ -15,7 +15,7 @@ Two platforms in scope for this design: **Instagram** and **TikTok**. Chosen for
 
 The abstraction must accommodate both push and pull sync without leaking platform quirks into the API.
 
-Functional scope is limited to what `PRD.md` calls out:
+Functional scope is limited to what the [brief](./BRIEF.md) calls out:
 
 - Retrieve **Comments** for a published **Post**
 - **Reply** to a **Comment**
@@ -63,7 +63,7 @@ Key storage: `key_hash` (sha256, not bcrypt — hit on every request; 256-bit ra
 
 Deliberately excluded: scoped/permissioned keys, forced rotation, JWTs. Rate limiting lives at the gateway, keyed on `user_id`.
 
-See [ADR-0003](./docs/adr/0003-api-key-auth.md).
+See [ADR-0003](./adr/0003-api-key-auth.md).
 
 ## Open questions
 

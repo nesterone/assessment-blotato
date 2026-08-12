@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Decisions with meaningful cost-to-reverse. Smaller/reversible design choices live in [`PRD-detailed.md`](../../PRD-detailed.md).
+Decisions with meaningful cost-to-reverse. Smaller/reversible design choices live in [`PRD.md`](../PRD.md).
 
 | #    | Decision                                                                    |
 | ---- | --------------------------------------------------------------------------- |
