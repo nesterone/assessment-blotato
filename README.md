@@ -53,6 +53,7 @@ npm run test:watch
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Start API in watch mode. |
+| `npm run fakes` | Serve the fake Instagram + TikTok on `:4000` (`FAKES_PORT` to override). |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm run format` / `format:check` | Prettier over code; markdown is ignored. |
 | `npm run build` / `start` | Compile to `dist/` / run compiled server. |
