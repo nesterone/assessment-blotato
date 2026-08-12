@@ -51,8 +51,7 @@ export function tiktokFake(store: FakeStore) {
 type ReplyBody = { video_id: string; comment_id: string; text: string };
 type ListBody = { video_id: string; comment_id?: string; cursor?: number };
 
-const cursor = (body: ListBody) =>
-  body.cursor ? String(body.cursor) : null;
+const cursor = (body: ListBody) => (body.cursor ? String(body.cursor) : null);
 
 function authExpired(req: FastifyRequest): boolean {
   const token = (req.headers.authorization ?? '').replace(/^Bearer /i, '');

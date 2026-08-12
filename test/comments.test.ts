@@ -10,7 +10,8 @@ const AUTH = { authorization: `Bearer ${API_KEY}` };
 const OTHER_USERS_COMMENT = fixtures.comments.otherUsersComment;
 const NESTED_PARENT = fixtures.comments.aIg1;
 const UNKNOWN_UUID = '99999999-9999-4999-8999-999999999999';
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 describe('comments routes', () => {
   let app: FastifyInstance;

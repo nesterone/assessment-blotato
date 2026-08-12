@@ -1,4 +1,7 @@
-import type { CreateReplyBody, CreateReplyResponse } from '../../schemas/reply.js';
+import type {
+  CreateReplyBody,
+  CreateReplyResponse,
+} from '../../schemas/reply.js';
 import { db } from '../../db/client.js';
 import { comments } from '../../db/schema.js';
 import { getParentComment } from '../../db/queries/comments.js';

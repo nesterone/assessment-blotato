@@ -103,7 +103,10 @@ export const comments = pgTable(
     syncedAt: timestamp('synced_at', { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex('comments_platform_uk').on(t.platformPostId, t.platformCommentId),
+    uniqueIndex('comments_platform_uk').on(
+      t.platformPostId,
+      t.platformCommentId,
+    ),
     index('comments_platform_post_created_idx').on(
       t.platformPostId,
       t.createdAt.desc(),

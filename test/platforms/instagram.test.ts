@@ -31,7 +31,10 @@ afterAll(async () => {
 describe('Instagram quirks', () => {
   it('code 190 maps to PlatformAuthExpired, not PlatformRetryable', async () => {
     const err = await clientFor('instagram')
-      .listComments({ platformPostId: 'ig_post_a', cursor: null }, account('ig_token_expired'))
+      .listComments(
+        { platformPostId: 'ig_post_a', cursor: null },
+        account('ig_token_expired'),
+      )
       .catch((e) => e);
 
     expect(err).toBeInstanceOf(PlatformAuthExpired);

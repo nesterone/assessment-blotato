@@ -21,7 +21,9 @@ export default fp(async (app) => {
     async (req: FastifyRequest, _reply: FastifyReply) => {
       const header = req.headers.authorization;
       if (!header || !header.startsWith('Bearer ')) {
-        throw app.httpErrors.unauthorized('Missing or malformed Authorization header');
+        throw app.httpErrors.unauthorized(
+          'Missing or malformed Authorization header',
+        );
       }
       const key = header.slice('Bearer '.length).trim();
       if (!key) {

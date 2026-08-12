@@ -35,7 +35,9 @@ export function instagramFake(store: FakeStore) {
       async (req, reply) => {
         if (authExpired(req.query.access_token)) return oauthExpired(reply);
         if (req.params.mediaId.includes('ratelimit')) return rateLimited(reply);
-        return list(store.topLevel(req.params.mediaId, req.query.after ?? null));
+        return list(
+          store.topLevel(req.params.mediaId, req.query.after ?? null),
+        );
       },
     );
 
@@ -46,7 +48,9 @@ export function instagramFake(store: FakeStore) {
         if (req.params.commentId.includes('ratelimit')) {
           return rateLimited(reply);
         }
-        return list(store.replies(req.params.commentId, req.query.after ?? null));
+        return list(
+          store.replies(req.params.commentId, req.query.after ?? null),
+        );
       },
     );
   };
@@ -77,7 +81,10 @@ function list(page: { items: StoredComment[]; nextCursor: string | null }) {
   return {
     data: page.items.map(dto),
     paging: page.nextCursor
-      ? { cursors: { after: page.nextCursor }, next: `?after=${page.nextCursor}` }
+      ? {
+          cursors: { after: page.nextCursor },
+          next: `?after=${page.nextCursor}`,
+        }
       : { cursors: {} },
   };
 }

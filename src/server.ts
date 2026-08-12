@@ -10,9 +10,9 @@ import auth from './plugins/auth.js';
 import posts from './routes/posts.js';
 import comments from './routes/comments.js';
 
-const addFormats = (
-  addFormatsImport as unknown as { default?: (ajv: Ajv) => Ajv }
-).default ?? (addFormatsImport as unknown as (ajv: Ajv) => Ajv);
+const addFormats =
+  (addFormatsImport as unknown as { default?: (ajv: Ajv) => Ajv }).default ??
+  (addFormatsImport as unknown as (ajv: Ajv) => Ajv);
 
 export async function buildApp() {
   const app = Fastify({

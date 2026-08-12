@@ -1,5 +1,9 @@
 import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox';
-import { PaginationQuery, UuidParam, ErrorResponse } from '../schemas/common.js';
+import {
+  PaginationQuery,
+  UuidParam,
+  ErrorResponse,
+} from '../schemas/common.js';
 import { Post, PostPage } from '../schemas/post.js';
 import { CommentPage } from '../schemas/comment.js';
 import { listPosts } from '../handlers/posts/list-posts.js';

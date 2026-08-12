@@ -74,7 +74,11 @@ describe.each(scenarios)('PlatformClient contract — $platform', (s) => {
 
   it('postReply returns a platformCommentId', async () => {
     const result = await client.postReply(
-      { platformPostId: s.postId, parentPlatformCommentId: s.parentId, body: 'hi' },
+      {
+        platformPostId: s.postId,
+        parentPlatformCommentId: s.parentId,
+        body: 'hi',
+      },
       account(s.token),
     );
     expect(result.platformCommentId).toBeTruthy();
@@ -99,7 +103,11 @@ describe.each(scenarios)('PlatformClient contract — $platform', (s) => {
   it('expired token → PlatformAuthExpired', async () => {
     await expect(
       client.postReply(
-        { platformPostId: s.postId, parentPlatformCommentId: s.parentId, body: 'hi' },
+        {
+          platformPostId: s.postId,
+          parentPlatformCommentId: s.parentId,
+          body: 'hi',
+        },
         account(s.expiredToken),
       ),
     ).rejects.toBeInstanceOf(PlatformAuthExpired);
@@ -181,7 +189,10 @@ describe.each(scenarios)('PlatformClient contract — $platform', (s) => {
       { parentPlatformCommentId: s.parentId, cursor: null },
       account(s.token),
     );
-    expect(comments.map((c) => c.body).sort()).toEqual(['reply one', 'reply two']);
+    expect(comments.map((c) => c.body).sort()).toEqual([
+      'reply one',
+      'reply two',
+    ]);
     for (const c of comments) {
       expect(c.parentPlatformCommentId).toBe(s.parentId);
     }

@@ -4,9 +4,17 @@ import type { AddressInfo } from 'node:net';
 import { requestJson } from '../../src/platforms/http.js';
 import { PlatformRetryable } from '../../src/platforms/types.js';
 
-type Responder = (respond: (status: number, headers: Record<string, string>, body: string) => void) => void;
+type Responder = (
+  respond: (
+    status: number,
+    headers: Record<string, string>,
+    body: string,
+  ) => void,
+) => void;
 
-async function startServer(handler: Responder): Promise<{ url: string; close: () => Promise<void> }> {
+async function startServer(
+  handler: Responder,
+): Promise<{ url: string; close: () => Promise<void> }> {
   const server: Server = createServer((_req, res) => {
     handler((status, headers, body) => {
       res.writeHead(status, headers);
@@ -30,7 +38,11 @@ describe('requestJson transport', () => {
 
   it('HTML body instead of JSON → PlatformRetryable', async () => {
     const { url, close } = await startServer((respond) =>
-      respond(502, { 'content-type': 'text/html' }, '<html><body>Bad Gateway</body></html>'),
+      respond(
+        502,
+        { 'content-type': 'text/html' },
+        '<html><body>Bad Gateway</body></html>',
+      ),
     );
     try {
       await expect(requestJson(url)).rejects.toBeInstanceOf(PlatformRetryable);
@@ -42,10 +54,15 @@ describe('requestJson transport', () => {
   it('response slower than timeoutMs → PlatformRetryable', async () => {
     let timer: NodeJS.Timeout;
     const { url, close } = await startServer((respond) => {
-      timer = setTimeout(() => respond(200, { 'content-type': 'application/json' }, '{}'), 200);
+      timer = setTimeout(
+        () => respond(200, { 'content-type': 'application/json' }, '{}'),
+        200,
+      );
     });
     try {
-      await expect(requestJson(url, {}, 50)).rejects.toBeInstanceOf(PlatformRetryable);
+      await expect(requestJson(url, {}, 50)).rejects.toBeInstanceOf(
+        PlatformRetryable,
+      );
     } finally {
       clearTimeout(timer!);
       await close();

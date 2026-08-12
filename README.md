@@ -53,6 +53,7 @@ npm run test:watch
 | --- | --- |
 | `npm run dev` | Start API in watch mode. |
 | `npm run typecheck` | `tsc --noEmit`. |
+| `npm run format` / `format:check` | Prettier over code; markdown is ignored. |
 | `npm run build` / `start` | Compile to `dist/` / run compiled server. |
 | `npm run db:start` / `db:stop` | Docker compose up/down. |
 | `npm run db:push` | Sync `src/db/schema.ts` to the dev DB. |

@@ -6,7 +6,8 @@ export type Cursor = { createdAt: string; id: string };
 
 export const DEFAULT_LIMIT = 50;
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function decodeCursor(raw: string | undefined): Cursor | null {
   if (!raw) return null;
@@ -46,10 +47,15 @@ export function afterCursor(
   return or(lt(createdAt, at), and(eq(createdAt, at), lt(id, cursor.id)));
 }
 
-export function encodeCursor(row: { createdAt: Date | string; id: string }): string {
+export function encodeCursor(row: {
+  createdAt: Date | string;
+  id: string;
+}): string {
   const createdAt =
     row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt;
-  return Buffer.from(JSON.stringify({ createdAt, id: row.id })).toString('base64url');
+  return Buffer.from(JSON.stringify({ createdAt, id: row.id })).toString(
+    'base64url',
+  );
 }
 
 /**

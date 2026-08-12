@@ -32,9 +32,13 @@ export class InstagramClient implements PlatformClient {
     target: ReplyTarget,
     account: ConnectedAccount,
   ): Promise<{ platformCommentId: string }> {
-    const url = this.url(`/${target.parentPlatformCommentId}/replies`, account, {
-      message: target.body,
-    });
+    const url = this.url(
+      `/${target.parentPlatformCommentId}/replies`,
+      account,
+      {
+        message: target.body,
+      },
+    );
     const res = await requestJson<IgReplyCreated & IgError>(url, {
       method: 'POST',
     });
@@ -46,7 +50,11 @@ export class InstagramClient implements PlatformClient {
     input: { platformPostId: string; cursor: string | null },
     account: ConnectedAccount,
   ): Promise<CommentPage> {
-    return this.list(`/${input.platformPostId}/comments`, input.cursor, account);
+    return this.list(
+      `/${input.platformPostId}/comments`,
+      input.cursor,
+      account,
+    );
   }
 
   async listReplies(

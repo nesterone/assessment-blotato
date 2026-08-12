@@ -91,7 +91,9 @@ describe('posts routes', () => {
     });
 
     it('400 for cursor whose json has the wrong shape', async () => {
-      const bad = Buffer.from(JSON.stringify({ foo: 'bar' })).toString('base64url');
+      const bad = Buffer.from(JSON.stringify({ foo: 'bar' })).toString(
+        'base64url',
+      );
       const res = await app.inject({
         method: 'GET',
         url: `/posts?cursor=${encodeURIComponent(bad)}`,
@@ -116,7 +118,10 @@ describe('posts routes', () => {
 
     it('400 for cursor whose id is not a uuid', async () => {
       const bad = Buffer.from(
-        JSON.stringify({ createdAt: new Date().toISOString(), id: 'not-a-uuid' }),
+        JSON.stringify({
+          createdAt: new Date().toISOString(),
+          id: 'not-a-uuid',
+        }),
       ).toString('base64url');
       const res = await app.inject({
         method: 'GET',

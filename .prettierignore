@@ -1,0 +1,7 @@
+dist
+package-lock.json
+docs/schema.svg
+
+# Prose and diagrams. Prettier pads markdown tables to the widest cell, which
+# churns every doc for no readability gain.
+*.md
