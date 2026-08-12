@@ -18,11 +18,11 @@ The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things and four de
 | Deliverable | Where |
 | --- | --- |
 | Database schema | [`src/db/schema.ts`](./src/db/schema.ts), explained in [`docs/schema.md`](./docs/schema.md) |
-| API design | [`docs/api.md`](./docs/api.md), live at `/docs` |
+| API design | [`docs/api.md`](./docs/api.md), live at `<http://localhost:3000/docs>` |
 | Design decisions | [`docs/adr/`](./docs/adr) |
 
 
-# Stack
+## Stack
 
  * Fastify
  * TypeBox 
