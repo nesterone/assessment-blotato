@@ -6,8 +6,13 @@ import {
   type SyncTarget,
 } from '../db/queries/comments.js';
 import { clientFor } from '../platforms/registry.js';
-import { PlatformRetryable, type PlatformClient } from '../platforms/types.js';
+import {
+  PlatformError,
+  PlatformRetryable,
+  type PlatformClient,
+} from '../platforms/types.js';
 import type { ConnectedAccount, PlatformComment } from '../platforms/types.js';
+import { logger, type Logger } from '../logger.js';
 
 /**
  * Pulls comments in from the platforms. Both platforms poll here; Instagram
@@ -15,16 +20,33 @@ import type { ConnectedAccount, PlatformComment } from '../platforms/types.js';
  * safety net for dropped deliveries.
  */
 export class SyncWorker {
+  constructor(private readonly log: Logger = logger.child({ worker: 'sync' })) {}
+
   async tick(platform: string): Promise<void> {
     const targets = await platformPostsToSync(platform);
     const client = clientFor(platform);
+    this.log.info('sync tick', { platform, posts: targets.length });
     for (const target of targets) {
       try {
         await this.syncPost(client, target);
       } catch (err) {
         // A retryable failure leaves the cursor where it was, so the next tick
         // refetches from the same point. Anything else is isolated to this post.
-        if (!(err instanceof PlatformRetryable)) throw err;
+        if (err instanceof PlatformRetryable) {
+          this.log.warn('sync deferred (retryable)', {
+            platform,
+            platformPostId: target.platformPostId,
+            platformCode: err.platformCode,
+          });
+          continue;
+        }
+        this.log.error('sync failed', {
+          platform,
+          platformPostId: target.platformPostId,
+          platformCode: err instanceof PlatformError ? err.platformCode : undefined,
+          reason: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       }
     }
   }
@@ -55,6 +77,13 @@ export class SyncWorker {
     // by the count consumed so the next tick starts past what we've seen.
     const advanced = String(Number(target.syncCursor ?? 0) + fetched);
     await advanceSyncCursor(target.id, advanced);
+    if (fetched > 0) {
+      this.log.info('post synced', {
+        platformPostId: target.platformPostId,
+        fetched,
+        cursor: advanced,
+      });
+    }
   }
 
   private async syncReplies(

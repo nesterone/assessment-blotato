@@ -9,9 +9,11 @@ import {
 import { clientFor } from '../platforms/registry.js';
 import {
   PlatformAuthExpired,
+  PlatformError,
   PlatformRejected,
   PlatformRetryable,
 } from '../platforms/types.js';
+import { logger, type Logger } from '../logger.js';
 
 const MAX_ATTEMPTS = 5;
 const RETRY_BASE_MS = 60_000;
@@ -22,8 +24,11 @@ const BATCH_SIZE = 20;
  * `.drainAll()`; scheduling is a deployment concern wired in `src/index.ts`.
  */
 export class SenderWorker {
+  constructor(private readonly log: Logger = logger.child({ worker: 'sender' })) {}
+
   async drainAll(): Promise<void> {
     const ids = await claimPendingReplies(BATCH_SIZE);
+    if (ids.length > 0) this.log.debug('claimed pending replies', { count: ids.length });
     for (const id of ids) {
       await this.processOne(id);
     }
@@ -49,6 +54,11 @@ export class SenderWorker {
         },
       );
       await this.markSent(id, platformCommentId);
+      this.log.info('reply sent', {
+        id,
+        platform: row.platform,
+        platformCommentId,
+      });
     } catch (err) {
       await this.handleFailure(row, err);
     }
@@ -67,24 +77,31 @@ export class SenderWorker {
   }
 
   private async handleFailure(row: SendableReply, err: unknown): Promise<void> {
+    const platformCode = err instanceof PlatformError ? err.platformCode : undefined;
+    const base = { id: row.id, platform: row.platform, platformCode };
+
     if (err instanceof PlatformRejected) {
+      this.log.error('reply rejected', { ...base, reason: err.message });
       return this.markFailed(row.id, err.message);
     }
     if (err instanceof PlatformAuthExpired) {
       // Waiting won't fix a dead token, but the reply isn't at fault either:
       // hold it pending for a reconnect rather than burning it to `failed`.
+      this.log.warn('reply held: auth expired', base);
       return this.hold(row.id, err.message);
     }
 
     const attempts = row.attemptCount + 1;
     const message = err instanceof Error ? err.message : String(err);
     if (attempts >= MAX_ATTEMPTS) {
+      this.log.error('reply failed: attempt cap reached', { ...base, attempts });
       return this.markFailed(row.id, message);
     }
     const backoff =
       err instanceof PlatformRetryable && err.retryAfterMs
         ? err.retryAfterMs
         : RETRY_BASE_MS * attempts;
+    this.log.warn('reply retry scheduled', { ...base, attempt: attempts, backoffMs: backoff });
     await db
       .update(comments)
       .set({
