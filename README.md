@@ -24,6 +24,7 @@ Explorer UI: <http://localhost:3000/docs> · OpenAPI JSON: <http://localhost:300
 | --- | --- |
 | `DATABASE_URL` | Postgres connection string. |
 | `PORT` | HTTP port (default `3000`). |
+| `INSTAGRAM_BASE_URL` / `TIKTOK_BASE_URL` | Platform API roots. No real app for this assessment, so they point at the fakes in `test/fakes`; the real values are in `.env.example` comments. |
 | `TEST_API_KEY` | Plaintext API key seeded into `api_keys`. sha256 of this value is what the DB stores; requests send `Authorization: Bearer <TEST_API_KEY>`. |
 
 `.env` is gitignored (dev writes their own). `.env.example` and `.env.test` are committed templates.
