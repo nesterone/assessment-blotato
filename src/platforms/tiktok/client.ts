@@ -62,7 +62,7 @@ export class TiktokClient implements PlatformClient {
       account,
       {
         video_id: input.platformPostId,
-        cursor: Number(input.cursor ?? 0),
+        cursor: offset(input.cursor),
         count: PAGE_SIZE,
       },
     );
@@ -79,7 +79,7 @@ export class TiktokClient implements PlatformClient {
       account,
       {
         comment_id: input.parentPlatformCommentId,
-        cursor: Number(input.cursor ?? 0),
+        cursor: offset(input.cursor),
         count: PAGE_SIZE,
       },
     );
@@ -153,6 +153,20 @@ export class TiktokClient implements PlatformClient {
     if (res.status === 429) throw retryable(text, code, res.retryAfterMs);
     throw new PlatformRejected(text, code);
   }
+}
+
+/**
+ * TikTok pages on a numeric offset, but `platform_posts.sync_cursor` is one
+ * `text` column shared by every platform. An Instagram cursor replayed here
+ * used to reach `Number()` as NaN and serialize to `null`, quietly restarting
+ * the walk from page one and re-reading comments already synced.
+ */
+function offset(cursor: string | null): number {
+  if (cursor == null) return 0;
+  if (!/^\d+$/.test(cursor)) {
+    throw new PlatformRejected(`unusable TikTok cursor: ${cursor}`);
+  }
+  return Number(cursor);
 }
 
 function retryable(

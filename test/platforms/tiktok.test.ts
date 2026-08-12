@@ -87,6 +87,33 @@ describe('TikTok non-2xx responses', () => {
     }
   });
 
+  it('a cursor that is not a number is rejected, not sent as null', async () => {
+    const { url, close } = await startServer((res) =>
+      sendJson(res, 200, {
+        data: { comments: [], has_more: false },
+        error: { code: 'ok' },
+      }),
+    );
+    const client = new TiktokClient(url);
+    try {
+      await expect(
+        client.listComments(
+          { platformPostId: 'tt_post_a', cursor: 'QVFIUmxr' },
+          account('tt_token_primary'),
+        ),
+      ).rejects.toBeInstanceOf(PlatformRejected);
+
+      await expect(
+        client.listReplies(
+          { parentPlatformCommentId: 'tt_c_a1', cursor: '' },
+          account('tt_token_primary'),
+        ),
+      ).rejects.toBeInstanceOf(PlatformRejected);
+    } finally {
+      await close();
+    }
+  });
+
   it('429 without an error code → PlatformRetryable with retryAfterMs', async () => {
     const { url, close } = await startServer((res) => {
       res.writeHead(429, {
