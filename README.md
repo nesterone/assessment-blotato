@@ -19,7 +19,6 @@ The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things and four de
 | --- | --- |
 | Database schema | [`src/db/schema.ts`](./src/db/schema.ts), explained in [`docs/schema.md`](./docs/schema.md) |
 | API design | [`docs/api.md`](./docs/api.md), live at `/docs` |
-| TypeScript | [`src/`](./src) |
 | Design decisions | [`docs/adr/`](./docs/adr) |
 
 
@@ -52,8 +51,4 @@ curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
 ```bash
 npm run db:start && npm test
 ```
-
-## The decisions
-
-The ones with cost to reverse are recorded as ADRs — start at the [index](./docs/adr). Two carry the design: [comments are stored, not proxied](./docs/adr/0001-comments-as-system-of-record.md), and [the platform boundary lives behind the workers](./docs/adr/0006-platform-boundary-and-http-fakes.md). Smaller, reversible choices sit in [`docs/PRD.md`](./docs/PRD.md).
 </content>
