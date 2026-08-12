@@ -46,9 +46,28 @@ curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
   http://localhost:3000/posts
 ```
 
+### Run against the fake platforms
+
+There's no real Instagram or TikTok app, so the sender and sync workers talk to
+local fakes that answer the way the real APIs do (Instagram by HTTP status,
+TikTok with a `200 OK` body whose `error.code` carries the outcome). Run them in
+a second terminal:
+
+```bash
+npm run fakes   # serves /ig and /tiktok on http://127.0.0.1:4000
+```
+
+`.env.example` already points `INSTAGRAM_BASE_URL` / `TIKTOK_BASE_URL` at it, and
+the fakes seed the two comments `db:reset` uses as reply targets — so with both
+`npm run dev` and `npm run fakes` up, a `POST /comments/:id/replies` is picked up
+by the sender and flips to `sent` within a few seconds.
+
 ## Test it
 
 ```bash
 npm run db:start && npm test
 ```
+
+The test suite boots its own copy of the fakes on an ephemeral port, so
+`npm run fakes` is only needed for the dev server above — not for tests.
 </content>
