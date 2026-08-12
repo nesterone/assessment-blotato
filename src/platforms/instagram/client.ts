@@ -61,7 +61,11 @@ export class InstagramClient implements PlatformClient {
   }
 
   async listReplies(
-    input: { parentPlatformCommentId: string; cursor: string | null },
+    input: {
+      platformPostId: string;
+      parentPlatformCommentId: string;
+      cursor: string | null;
+    },
     account: ConnectedAccount,
   ): Promise<CommentPage> {
     const page = await this.list(

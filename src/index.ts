@@ -1,8 +1,11 @@
 import { buildApp } from './server.js';
 import { SenderWorker } from './workers/sender.js';
+import { SyncWorker } from './workers/sync.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const SENDER_INTERVAL_MS = 5_000;
+const TIKTOK_SYNC_INTERVAL_MS = 5 * 60_000;
+const INSTAGRAM_SYNC_INTERVAL_MS = 60 * 60_000;
 
 const app = await buildApp();
 
@@ -16,6 +19,13 @@ try {
   setInterval(() => {
     sender.drainAll().catch((err) => console.error('sender drain failed', err));
   }, SENDER_INTERVAL_MS).unref();
+
+  const sync = new SyncWorker();
+  const poll = (platform: string) => () => {
+    sync.tick(platform).catch((err) => console.error(`${platform} sync failed`, err));
+  };
+  setInterval(poll('tiktok'), TIKTOK_SYNC_INTERVAL_MS).unref();
+  setInterval(poll('instagram'), INSTAGRAM_SYNC_INTERVAL_MS).unref();
 } catch (err) {
   console.error(err);
   process.exit(1);

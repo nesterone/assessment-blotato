@@ -112,3 +112,83 @@ export async function loadSendable(id: string): Promise<SendableReply | null> {
   `);
   return result.rows[0] ?? null;
 }
+
+export type SyncTarget = {
+  id: string;
+  platformPostId: string;
+  syncCursor: string | null;
+  accessToken: string;
+  refreshToken: string | null;
+  tokenExpiresAt: Date | null;
+  platformAccountId: string;
+};
+
+/** Every platform post on `platform`, across all accounts, with its cursor. */
+export async function platformPostsToSync(
+  platform: string,
+): Promise<SyncTarget[]> {
+  const result = await db.execute<SyncTarget>(sql`
+    SELECT
+      pp.id,
+      pp.platform_post_id AS "platformPostId",
+      pp.sync_cursor AS "syncCursor",
+      ca.access_token AS "accessToken",
+      ca.refresh_token AS "refreshToken",
+      ca.token_expires_at AS "tokenExpiresAt",
+      ca.platform_account_id AS "platformAccountId"
+    FROM platform_posts pp
+    JOIN connected_accounts ca ON ca.id = pp.connected_account_id
+    WHERE ca.platform = ${platform}
+    ORDER BY pp.id
+  `);
+  return result.rows;
+}
+
+/**
+ * `DO NOTHING` on the `(platform_post_id, platform_comment_id)` unique index is
+ * what makes re-polling safe: a comment already stored — including our own sent
+ * reply polled back — is left untouched rather than duplicated or clobbered.
+ */
+export async function upsertPlatformComment(input: {
+  platformPostId: string;
+  parentCommentId: string | null;
+  platformCommentId: string;
+  authorPlatformHandle: string;
+  body: string;
+  createdAt: Date;
+}): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO comments
+      (platform_post_id, parent_comment_id, platform_comment_id,
+       author_platform_handle, body, send_status, created_at, synced_at)
+    VALUES
+      (${input.platformPostId}, ${input.parentCommentId},
+       ${input.platformCommentId}, ${input.authorPlatformHandle},
+       ${input.body}, 'sent', ${input.createdAt}, now())
+    ON CONFLICT (platform_post_id, platform_comment_id) DO NOTHING
+  `);
+}
+
+export async function commentUuidByPlatformId(
+  platformPostId: string,
+  platformCommentId: string,
+): Promise<string | null> {
+  const result = await db.execute<{ id: string }>(sql`
+    SELECT id FROM comments
+    WHERE platform_post_id = ${platformPostId}
+      AND platform_comment_id = ${platformCommentId}
+    LIMIT 1
+  `);
+  return result.rows[0]?.id ?? null;
+}
+
+export async function advanceSyncCursor(
+  platformPostId: string,
+  cursor: string,
+): Promise<void> {
+  await db.execute(sql`
+    UPDATE platform_posts
+    SET sync_cursor = ${cursor}, last_polled_at = now()
+    WHERE id = ${platformPostId}
+  `);
+}

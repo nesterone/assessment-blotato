@@ -38,7 +38,11 @@ export interface PlatformClient {
   ): Promise<CommentPage>;
 
   listReplies(
-    input: { parentPlatformCommentId: string; cursor: string | null },
+    input: {
+      platformPostId: string;
+      parentPlatformCommentId: string;
+      cursor: string | null;
+    },
     account: ConnectedAccount,
   ): Promise<CommentPage>;
 }

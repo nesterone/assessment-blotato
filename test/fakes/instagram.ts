@@ -37,10 +37,12 @@ export function instagramFake(store: FakeStore) {
       '/:mediaId/comments',
       async (req, reply) => {
         if (authExpired(req.query.access_token)) return oauthExpired(reply);
-        if (req.params.mediaId.includes('ratelimit')) return rateLimited(reply);
-        return list(
-          store.topLevel(req.params.mediaId, req.query.after ?? null),
-        );
+        const mediaId = req.params.mediaId;
+        if (mediaId.includes('ratelimit')) return rateLimited(reply);
+        if (mediaId.includes('flaky') && store.recordAttempt(mediaId) === 1) {
+          return rateLimited(reply);
+        }
+        return list(store.topLevel(mediaId, req.query.after ?? null));
       },
     );
 

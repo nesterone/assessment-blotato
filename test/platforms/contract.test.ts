@@ -186,7 +186,7 @@ describe.each(scenarios)('PlatformClient contract — $platform', (s) => {
     });
 
     const { comments } = await client.listReplies(
-      { parentPlatformCommentId: s.parentId, cursor: null },
+      { platformPostId: s.postId, parentPlatformCommentId: s.parentId, cursor: null },
       account(s.token),
     );
     expect(comments.map((c) => c.body).sort()).toEqual([

@@ -71,13 +71,18 @@ export class TiktokClient implements PlatformClient {
   }
 
   async listReplies(
-    input: { parentPlatformCommentId: string; cursor: string | null },
+    input: {
+      platformPostId: string;
+      parentPlatformCommentId: string;
+      cursor: string | null;
+    },
     account: ConnectedAccount,
   ): Promise<CommentPage> {
     const res = await this.post<TtCommentList & TtEnvelope>(
       '/v2/video/comment/reply/list/',
       account,
       {
+        video_id: input.platformPostId,
         comment_id: input.parentPlatformCommentId,
         cursor: offset(input.cursor),
         count: PAGE_SIZE,
