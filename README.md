@@ -2,7 +2,35 @@
 
 A cross-platform comment system for a social-media scheduling API: read the **Comments** on your published **Posts** and **Reply** to them, across Instagram and TikTok, through one REST API.
 
-Fastify + TypeBox + Drizzle/Postgres. Node 22, Docker for Postgres 16. Terms in **bold** live in [`CONTEXT.md`](./CONTEXT.md).
+
+## What was asked, and where it lives
+
+The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things and four deliverables.
+
+
+| Requirement | Where |
+| --- | --- |
+| Retrieve comments for a post | `GET /posts/:id/comments`, `GET /comments/:id/replies` |
+| Reply to a comment | `POST /comments/:id/replies` |
+| Multiple platforms | [`src/platforms/`](./src/platforms) — one `PlatformClient`, adapters for Instagram + TikTok |
+| REST API | [`src/routes/`](./src/routes), [`src/handlers/`](./src/handlers) |
+
+| Deliverable | Where |
+| --- | --- |
+| Database schema | [`src/db/schema.ts`](./src/db/schema.ts), explained in [`docs/schema.md`](./docs/schema.md) |
+| API design | [`docs/api.md`](./docs/api.md), live at `/docs` |
+| TypeScript | [`src/`](./src) |
+| Design decisions | [`docs/adr/`](./docs/adr) |
+
+
+# Stack
+
+ * Fastify
+ * TypeBox 
+ * Drizzle/Postgres 
+ * Node 22
+ * Docker
+ * Postgres 16 
 
 ## Run it
 
@@ -21,29 +49,9 @@ curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
 
 ## Test it
 
-79 tests against **real Postgres and real HTTP** — the fakes are actual servers, so the suite exercises the real platform adapters, not stand-ins that agree with themselves.
-
 ```bash
 npm run db:start && npm test
 ```
-
-## What was asked, and where it lives
-
-The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things and four deliverables.
-
-| Requirement | Where |
-| --- | --- |
-| Retrieve comments for a post | `GET /posts/:id/comments`, `GET /comments/:id/replies` |
-| Reply to a comment | `POST /comments/:id/replies` |
-| Multiple platforms | [`src/platforms/`](./src/platforms) — one `PlatformClient`, adapters for Instagram + TikTok |
-| REST API | [`src/routes/`](./src/routes), [`src/handlers/`](./src/handlers) |
-
-| Deliverable | Where |
-| --- | --- |
-| Database schema | [`src/db/schema.ts`](./src/db/schema.ts), explained in [`docs/schema.md`](./docs/schema.md) |
-| API design | [`docs/api.md`](./docs/api.md), live at `/docs` |
-| TypeScript | [`src/`](./src) |
-| Design decisions | [`docs/adr/`](./docs/adr) |
 
 ## The decisions
 
