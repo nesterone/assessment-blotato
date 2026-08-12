@@ -2,12 +2,6 @@ import { InstagramClient } from './instagram/client.js';
 import { TiktokClient } from './tiktok/client.js';
 import { PlatformRejected, type PlatformClient } from './types.js';
 
-function requireBaseUrl(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set`);
-  return value;
-}
-
 /**
  * The `platform` column is `text` and lists five platforms; we integrate two.
  * Constructing per call (rather than caching) means the base-URL env is read
@@ -25,4 +19,10 @@ export function clientFor(platform: string): PlatformClient {
     default:
       throw new PlatformRejected(`unsupported platform: ${platform}`);
   }
+}
+
+function requireBaseUrl(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is not set`);
+  return value;
 }

@@ -11,8 +11,6 @@ declare module 'fastify' {
   }
 }
 
-const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
-
 export default fp(async (app) => {
   app.decorateRequest('userId', '');
 
@@ -43,6 +41,8 @@ export default fp(async (app) => {
     },
   );
 });
+
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
 
 declare module 'fastify' {
   interface FastifyInstance {

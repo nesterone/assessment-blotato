@@ -1,35 +1,6 @@
 import fp from 'fastify-plugin';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
-const validationReason = (keyword: string): string => {
-  switch (keyword) {
-    case 'required':
-      return 'required';
-    case 'minLength':
-      return 'too_short';
-    case 'maxLength':
-      return 'too_long';
-    case 'format':
-    case 'pattern':
-    case 'type':
-    case 'enum':
-      return 'invalid_format';
-    default:
-      return 'invalid_format';
-  }
-};
-
-const fieldPath = (err: {
-  instancePath?: string;
-  params?: Record<string, unknown>;
-}): string => {
-  if (err.params && typeof err.params.missingProperty === 'string') {
-    return err.params.missingProperty;
-  }
-  const path = err.instancePath ?? '';
-  return path.replace(/^\//, '').replace(/\//g, '.') || '_';
-};
-
 type ValidationError = FastifyError & {
   validation?: Array<{
     keyword: string;
@@ -98,3 +69,32 @@ export default fp(async (app) => {
     },
   );
 });
+
+const validationReason = (keyword: string): string => {
+  switch (keyword) {
+    case 'required':
+      return 'required';
+    case 'minLength':
+      return 'too_short';
+    case 'maxLength':
+      return 'too_long';
+    case 'format':
+    case 'pattern':
+    case 'type':
+    case 'enum':
+      return 'invalid_format';
+    default:
+      return 'invalid_format';
+  }
+};
+
+const fieldPath = (err: {
+  instancePath?: string;
+  params?: Record<string, unknown>;
+}): string => {
+  if (err.params && typeof err.params.missingProperty === 'string') {
+    return err.params.missingProperty;
+  }
+  const path = err.instancePath ?? '';
+  return path.replace(/^\//, '').replace(/\//g, '.') || '_';
+};

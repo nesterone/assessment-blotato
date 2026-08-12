@@ -11,11 +11,6 @@ import {
 } from './schema.js';
 import { fixtures } from './fixtures.js';
 
-const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
-
-const iso = (offsetMinutes: number) =>
-  new Date(Date.UTC(2025, 0, 15, 10, 0, 0) + offsetMinutes * 60_000);
-
 export async function seed() {
   const apiKeyPlain = process.env.TEST_API_KEY;
   if (!apiKeyPlain) {
@@ -270,6 +265,11 @@ export async function seed() {
     },
   ]);
 }
+
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
+
+const iso = (offsetMinutes: number) =>
+  new Date(Date.UTC(2025, 0, 15, 10, 0, 0) + offsetMinutes * 60_000);
 
 const isDirectRun =
   import.meta.url === `file://${process.argv[1]}` ||
