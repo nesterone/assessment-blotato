@@ -9,3 +9,4 @@ Decisions with meaningful cost-to-reverse. Smaller/reversible design choices liv
 | 0003 | [API-key auth, not JWT or OAuth](./0003-api-key-auth.md)                    |
 | 0004 | [Async reply writes, returning 202 with the local id](./0004-async-reply-write.md) |
 | 0005 | [Cursor pagination, not offset](./0005-cursor-pagination.md)                |
+| 0006 | [The platform boundary lives behind the workers, tested with HTTP fakes](./0006-platform-boundary-and-http-fakes.md) |
