@@ -23,7 +23,7 @@ The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things, delivered 
 
 ### Out of scope
 
-Integration with real platforms is out of scope for this assessments, for more details look at (docs/PRD.md)  
+Integration with real platforms is out of scope for this assessments, for more details look at ([`docs/PRD.md`](./docs/PRD.md))
 
 
 ## Stack
