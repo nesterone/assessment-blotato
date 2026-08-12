@@ -21,6 +21,10 @@ The brief ([`docs/BRIEF.md`](./docs/BRIEF.md)) asked for four things, delivered 
 - **TypeScript code** — the [`src/`](./src) tree.
 - **Design decisions** — [`docs/adr/`](./docs/adr).
 
+### Out of scope
+
+Integration with real platforms is out of scope for this assessments, for more details look at (docs/PRD.md)  
+
 
 ## Stack
 
@@ -48,19 +52,12 @@ curl -H "Authorization: Bearer $(grep TEST_API_KEY .env | cut -d= -f2)" \
 
 ### Run against the fake platforms
 
-There's no real Instagram or TikTok app, so the sender and sync workers talk to
-local fakes that answer the way the real APIs do (Instagram by HTTP status,
-TikTok with a `200 OK` body whose `error.code` carries the outcome). Run them in
-a second terminal:
+To check full cycle 
 
 ```bash
 npm run fakes   # serves /ig and /tiktok on http://127.0.0.1:4000
 ```
 
-`.env.example` already points `INSTAGRAM_BASE_URL` / `TIKTOK_BASE_URL` at it, and
-the fakes seed the two comments `db:reset` uses as reply targets — so with both
-`npm run dev` and `npm run fakes` up, a `POST /comments/:id/replies` is picked up
-by the sender and flips to `sent` within a few seconds.
 
 ## Test it
 
