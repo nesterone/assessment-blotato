@@ -31,11 +31,6 @@ export interface Logger {
   child(bindings: Fields): Logger;
 }
 
-function threshold(): number {
-  const level = process.env.LOG_LEVEL;
-  return level && level in RANK ? RANK[level as Level | 'silent'] : RANK.info;
-}
-
 class ConsoleLogger implements Logger {
   constructor(private readonly bindings: Fields = {}) {}
 
@@ -71,6 +66,11 @@ class ConsoleLogger implements Logger {
       }),
     );
   }
+}
+
+function threshold(): number {
+  const level = process.env.LOG_LEVEL;
+  return level && level in RANK ? RANK[level as Level | 'silent'] : RANK.info;
 }
 
 export function makeLogger(bindings: Fields = {}): Logger {
