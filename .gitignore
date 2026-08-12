@@ -4,3 +4,4 @@ dist
 !.env.example
 !.env.test
 coverage
+docs/submission-email.md
