@@ -1,33 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { requestJson } from '../../src/platforms/http.js';
 import { PlatformRetryable } from '../../src/platforms/types.js';
-
-type Responder = (
-  respond: (
-    status: number,
-    headers: Record<string, string>,
-    body: string,
-  ) => void,
-) => void;
-
-async function startServer(
-  handler: Responder,
-): Promise<{ url: string; close: () => Promise<void> }> {
-  const server: Server = createServer((_req, res) => {
-    handler((status, headers, body) => {
-      res.writeHead(status, headers);
-      res.end(body);
-    });
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const { port } = server.address() as AddressInfo;
-  return {
-    url: `http://127.0.0.1:${port}`,
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
-  };
-}
+import { startServer } from '../helpers/http-server.js';
 
 describe('requestJson transport', () => {
   it('closed port → PlatformRetryable', async () => {
@@ -37,13 +11,10 @@ describe('requestJson transport', () => {
   });
 
   it('HTML body instead of JSON → PlatformRetryable', async () => {
-    const { url, close } = await startServer((respond) =>
-      respond(
-        502,
-        { 'content-type': 'text/html' },
-        '<html><body>Bad Gateway</body></html>',
-      ),
-    );
+    const { url, close } = await startServer((res) => {
+      res.writeHead(502, { 'content-type': 'text/html' });
+      res.end('<html><body>Bad Gateway</body></html>');
+    });
     try {
       await expect(requestJson(url)).rejects.toBeInstanceOf(PlatformRetryable);
     } finally {
@@ -53,11 +24,11 @@ describe('requestJson transport', () => {
 
   it('response slower than timeoutMs → PlatformRetryable', async () => {
     let timer: NodeJS.Timeout;
-    const { url, close } = await startServer((respond) => {
-      timer = setTimeout(
-        () => respond(200, { 'content-type': 'application/json' }, '{}'),
-        200,
-      );
+    const { url, close } = await startServer((res) => {
+      timer = setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end('{}');
+      }, 200);
     });
     try {
       await expect(requestJson(url, {}, 50)).rejects.toBeInstanceOf(
@@ -65,6 +36,49 @@ describe('requestJson transport', () => {
       );
     } finally {
       clearTimeout(timer!);
+      await close();
+    }
+  });
+
+  it('body that stalls past timeoutMs → PlatformRetryable', async () => {
+    const { url, close } = await startServer((res) => {
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'content-length': '64',
+      });
+      res.write('{"partial":');
+    });
+    try {
+      await expect(requestJson(url, {}, 50)).rejects.toBeInstanceOf(
+        PlatformRetryable,
+      );
+    } finally {
+      await close();
+    }
+  });
+
+  it('transport failure message omits the query string', async () => {
+    const { url, close } = await startServer(() => {});
+    await close();
+    const err = await requestJson(
+      `${url}/comments?access_token=SECRET_TOKEN`,
+    ).catch((e) => e);
+    expect(err.message).not.toContain('SECRET_TOKEN');
+    expect(err.message).toContain('/comments');
+  });
+
+  it('non-JSON failure message omits the query string', async () => {
+    const { url, close } = await startServer((res) => {
+      res.writeHead(502, { 'content-type': 'text/html' });
+      res.end('<html><body>Bad Gateway</body></html>');
+    });
+    try {
+      const err = await requestJson(
+        `${url}/comments?access_token=SECRET_TOKEN`,
+      ).catch((e) => e);
+      expect(err.message).not.toContain('SECRET_TOKEN');
+      expect(err.message).toContain('/comments');
+    } finally {
       await close();
     }
   });

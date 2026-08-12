@@ -25,29 +25,41 @@ export async function requestJson<T>(
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<JsonResponse<T>> {
   let res: Response;
+  let text: string;
   try {
     res = await fetch(url, {
       ...init,
       signal: AbortSignal.timeout(timeoutMs),
     });
+    // Inside the same try: the timeout can also fire mid-body, and a stalled
+    // read is the same "never got a usable answer" as a dead socket.
+    text = await res.text();
   } catch (err) {
     throw new PlatformRetryable(
-      `transport failure calling ${url}: ${(err as Error).message}`,
+      `transport failure calling ${withoutQuery(url)}: ${(err as Error).message}`,
     );
   }
 
-  const text = await res.text();
   let body: T;
   try {
     body = JSON.parse(text) as T;
   } catch {
     throw new PlatformRetryable(
-      `non-JSON response (status ${res.status}) from ${url}`,
+      `non-JSON response (status ${res.status}) from ${withoutQuery(url)}`,
     );
   }
 
   const retryAfterMs = parseRetryAfter(res.headers.get('retry-after'));
   return { status: res.status, headers: res.headers, body, retryAfterMs };
+}
+
+/**
+ * Instagram authenticates with an `access_token` query parameter, and these
+ * messages end up in logs and in `comments.send_error`. Only the origin and
+ * path may survive into them.
+ */
+function withoutQuery(url: string): string {
+  return url.split('?')[0];
 }
 
 function parseRetryAfter(value: string | null): number | undefined {

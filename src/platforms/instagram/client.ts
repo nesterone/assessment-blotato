@@ -43,6 +43,9 @@ export class InstagramClient implements PlatformClient {
       method: 'POST',
     });
     this.throwOnError(res);
+    if (!res.body.id) {
+      throw new PlatformRejected('Instagram returned no comment id');
+    }
     return { platformCommentId: res.body.id };
   }
 

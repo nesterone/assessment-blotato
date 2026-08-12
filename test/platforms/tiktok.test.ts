@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { clientFor } from '../../src/platforms/registry.js';
+import { TiktokClient } from '../../src/platforms/tiktok/client.js';
 import {
   PlatformRejected,
+  PlatformRetryable,
   type ConnectedAccount,
 } from '../../src/platforms/types.js';
 import { startFakes, type Fakes } from '../helpers/fakes.js';
+import { startServer, sendJson } from '../helpers/http-server.js';
 
 const account = (accessToken: string): ConnectedAccount => ({
   accessToken,
@@ -59,5 +62,50 @@ describe('TikTok quirks', () => {
         account('tt_token_primary'),
       ),
     ).rejects.toBeInstanceOf(PlatformRejected);
+  });
+});
+
+/**
+ * TikTok's own failures arrive as 200s, but a proxy or WAF in front of it
+ * answers with a real status and a body that has no `error.code`. Reading only
+ * the body would score those as a successful empty page.
+ */
+describe('TikTok non-2xx responses', () => {
+  it('4xx without an error code rejects instead of returning an empty page', async () => {
+    const { url, close } = await startServer((res) =>
+      sendJson(res, 403, { message: 'Forbidden' }),
+    );
+    try {
+      await expect(
+        new TiktokClient(url).listComments(
+          { platformPostId: 'tt_post_a', cursor: null },
+          account('tt_token_primary'),
+        ),
+      ).rejects.toBeInstanceOf(PlatformRejected);
+    } finally {
+      await close();
+    }
+  });
+
+  it('429 without an error code → PlatformRetryable with retryAfterMs', async () => {
+    const { url, close } = await startServer((res) => {
+      res.writeHead(429, {
+        'content-type': 'application/json',
+        'retry-after': '2',
+      });
+      res.end(JSON.stringify({ message: 'slow down' }));
+    });
+    try {
+      const err = await new TiktokClient(url)
+        .listComments(
+          { platformPostId: 'tt_post_a', cursor: null },
+          account('tt_token_primary'),
+        )
+        .catch((e) => e);
+      expect(err).toBeInstanceOf(PlatformRetryable);
+      expect(err.retryAfterMs).toBe(2000);
+    } finally {
+      await close();
+    }
   });
 });

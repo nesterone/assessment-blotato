@@ -121,24 +121,46 @@ export class TiktokClient implements PlatformClient {
    * TikTok answers `200 OK` even on failure and hides the outcome in
    * `error.code` — `"ok"` is success, anything else is the error. An adapter
    * that trusted the HTTP status would mark every failed call as sent.
+   *
+   * The status still has to be read, because anything in front of the API — a
+   * proxy, a WAF, a load balancer — answers with a real status and a body that
+   * has no `error.code` at all. Reading only the body scores those as success.
    */
   private throwOnError(res: JsonResponse<TtEnvelope>): void {
-    if (res.status >= 500) {
-      const err = new PlatformRetryable(`TikTok error ${res.status}`);
-      err.retryAfterMs = res.retryAfterMs;
-      throw err;
-    }
-
     const code = res.body.error?.code;
-    if (!code || code === OK) return;
+    const message = res.body.error?.message;
 
-    const message = res.body.error?.message || `TikTok error ${code}`;
-    if (AUTH_CODES.has(code)) throw new PlatformAuthExpired(message, code);
-    if (RATE_CODES.has(code) || RETRYABLE_CODES.has(code)) {
-      const err = new PlatformRetryable(message, code);
-      err.retryAfterMs = res.retryAfterMs;
-      throw err;
+    if (res.status >= 500) {
+      throw retryable(
+        message || `TikTok error ${res.status}`,
+        code,
+        res.retryAfterMs,
+      );
     }
-    throw new PlatformRejected(message, code);
+
+    if (code && code !== OK) {
+      const text = message || `TikTok error ${code}`;
+      if (AUTH_CODES.has(code)) throw new PlatformAuthExpired(text, code);
+      if (RATE_CODES.has(code) || RETRYABLE_CODES.has(code)) {
+        throw retryable(text, code, res.retryAfterMs);
+      }
+      throw new PlatformRejected(text, code);
+    }
+
+    if (res.status >= 200 && res.status < 300) return;
+
+    const text = message || `TikTok error ${res.status}`;
+    if (res.status === 429) throw retryable(text, code, res.retryAfterMs);
+    throw new PlatformRejected(text, code);
   }
+}
+
+function retryable(
+  message: string,
+  code: string | undefined,
+  retryAfterMs: number | undefined,
+): PlatformRetryable {
+  const err = new PlatformRetryable(message, code);
+  err.retryAfterMs = retryAfterMs;
+  return err;
 }
